@@ -17,11 +17,8 @@ path_xssa = Path(base_dir / Path('regionalization/data/julemai-xSSA/data_in/basi
 save_dir = Path(Path(base_dir) / Path('regionalization/data/input/eval_metrics' ))
 Path.mkdir(save_dir, exist_ok=True,parents = True)
 
-config_path = '/Users/guylitt/Documents/notgit/xssa_schema.yaml' # TODO temp location
+config_path = '/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_schema.yaml' # TODO temp location
 
-# Load the YAML configuration file
-with open(config_path, 'r') as file:
-    config = yaml.safe_load(file)
 
 # ---- Read in Julie Mai's xSSA results
 df_xssa_val = pd.read_csv(path_xssa,sep = '; ',dtype={'basin_id' :str})
@@ -41,28 +38,23 @@ df_camls_xssa_val = df_camlh.merge(df_xssa_val, left_on= 'gauge_id', right_on = 
 df_sub = df_camls_xssa_val.drop(columns = df_camlh.columns)
 
 # ----- Change to standard structure: # TODO convert this to a naming schema 
-col_schema_df = pd.DataFrame({
-              # required minimum
-              'GageID' : 'basin_id',
-              'metricCols' : 'nse|rmse|kge',
-              # high priority metadata
-              'dataset_name' : 'juliemai-xSSA',
-              'FormulationBase': 'Raven_blended',
-              'FormulationID' : 'Raven_blended',
-              'TemporalRes' : 'daily',
-              'TargetVar' : 'Q',
-              'StartDate' : '',
-              'EndDate' : '',
-              'CalYN' : 'Y',
-              # additional metadata
-              'RR' : '',
-              'SP' : '',
-               'GW' : '',
-              'input_filepath' : '{base_dir}/julemai-xSSA/data_in/basin_metadata/basin_validation_results.txt',
-              'source_url': 'https://zenodo.org/records/5730428',
-              'dataset_doi' : '10.5281/zenodo.5730428',
-              'literature_doi' : 'https://doi.org/10.1038/s41467-022-28010-7'
-            },index=[0])
+col_schema_df = pd.DataFrame(config['col_schema'])
+form_meta_df = pd.DataFrame(config['formulation_metadata'])
+ref_df = pd.DataFrame(config['references'], index=[0)
+
+def read_schm_dctoflist(schema_path):
+    # Load the YAML configuration file
+    with open(schema_path, 'r') as file:
+        config = yaml.safe_load(file)
+
+    # Convert dict of lists into pd.DataFrame
+    ls_form = list()
+    for k, vv in config.items():
+        for v in vv:
+            ls_form.append(pd.DataFrame(v, index = [0]))
+    df_all = pd.concat(ls_form, axis=1)
+
+    return df_all
 
 
 def proc_col_schema(df, col_schema_df):
@@ -96,4 +88,6 @@ def proc_col_schema(df, col_schema_df):
         save_path = Path(save_dir / f'{dataset_name}_{FormulationID}_{metr}.csv') # TODO is FormulationID desired in the filename
         data_metr.to_csv(save_path)
 
+
+col_schema_df = read_schm_dctoflist(schema_path = config_path)
 proc_col_schema(df_sub, col_schema_df)

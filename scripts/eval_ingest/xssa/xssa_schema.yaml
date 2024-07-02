@@ -1,19 +1,23 @@
 # setup for the Julie Mai xSSA datasets from 2022 Nature Comm pub
-col_schema:   # required column mappings
-  - 'gage_id': 'basin_id'
-  - 'metric_cols': 'nse|rmse|kge'
+col_schema:   # required column mappings in the evaluation metrics dataset
+  - 'gage_id': 'basin_id' # The basin identifier/gage id used for each modeled location in the evaluation metrics dataset
+  - 'metric_cols': 'nse|rmse|kge' # Column(s) in the dataset corresponding to the evaluation metrics. If multiple exist, separate each string by '|' e.g. 'rmse|kge|nse'
+file_io: # May define {home_dir} for python's '{home_dir}/string_path'.format(home_dir =str(Path.home())) functionality
+  - 'path_camels': '{home_dir}/noaa/camels2/camels_hydro.txt' # Path to the CAMELS basins dataset. CAMELS data should not always be a requirement for dataset processing, but serves to help analyze common catchments.
+  - 'path_data': '{home_dir}/noaa/regionalization/data/julemai-xSSA/data_in/basin_metadata/basin_validation_results.txt' # Where the raw input data are stored.
+  - 'dir_save': '{home_dir}/noaa/regionalization/data/input/eval_metrics' # The save location of standardized output
 formulation_metadata:  
-  - 'dataset_name': 'juliemai-xSSA'
-  - 'formulation_base': 'Raven_blended'
-  - 'formulation_id': 'Raven_blended'
-  - 'temporal_res': 'daily'
-  - 'target_var': 'Q'
-  - 'start_date': ''
-  - 'end_date': ''
-  - 'cal_yn': 'Y'
-  - 'rr': ''
-  - 'sp': ''
-  - 'gw': ''
+  - 'dataset_name': 'juliemai-xSSA' # Required. 
+  - 'formulation_base': 'Raven_blended' # Required. Basename of formulation. the rr, sp, and gw will be added to this if 'formulation_id' is left empty
+  - 'formulation_id': 'Raven_blended' # Optional alternative in lieu of generating a formulation_id based on 'formulation_base'. Should leave empty if automatic formulation_id generation desired.
+  - 'temporal_res': 'daily' # The temporal resolution corresponding to the modeled data
+  - 'target_var': 'Q' # The target variable modeled. This is standardized.
+  - 'start_date': # The start date corresponding to the evaluation metric's modeled timeseries
+  - 'end_date':  # The end date corresponding to the evaluation metric's modeled timeseries
+  - 'cal_yn': 'Y' # Required. Was the dataset calibrated? Y or N
+  - 'rr': 
+  - 'sp': 
+  - 'gw': 
 references:
   - 'input_filepath': '{base_dir}/julemai-xSSA/data_in/basin_metadata/basin_validation_results.txt'
   - 'source_url': 'https://zenodo.org/records/5730428'

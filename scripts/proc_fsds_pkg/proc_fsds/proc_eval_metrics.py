@@ -68,7 +68,7 @@ def proc_col_schema(df, col_schema_df, dir_save):
     # rr =  col_schema_df['rr'].iloc[0]
     # sp = col_schema_df['sp'].iloc[0]
     # gw =  col_schema_df['gw'].iloc[0]
-    # dataset_doi =  col_schema_df['dataset_doi'].iloc[0]
+    dataset_doi =  col_schema_df['dataset_doi'].iloc[0]
     # literature_doi =  col_schema_df['literature_doi'].iloc[0]
     
     # TODO configure which id_vars are expected in raw dataset
@@ -81,14 +81,21 @@ def proc_col_schema(df, col_schema_df, dir_save):
     # TODO create a function that optionally writes locally, to cloud, database, etc.
     Path(dir_save).mkdir(exist_ok=True, parents = True)
     
-    # Iterate over each metric & write each one to file individually
-    for metr, data_metr in df_melt_metr.groupby('metric'):
-        print(f'Saving {metr} with total basins n={data_metr.shape[0]}')
-        # TODO is FormulationID desired in the standardized filename?
-        save_path = Path(Path(dir_save) / f'{dataset_name}_{formulation_id}__{metr}.csv') 
-        data_metr.to_csv(save_path)
-    # Define the standard save_path structure
-    col_schema_df['save_path_format'] = str(save_path).replace(metr,'_')
+    # TODO consider how the dataset_id may need to be modified
+    # A unique ID corresponding to the metrics dataset.
+    if dataset_doi != None: # The doi is the preferred identifier
+        df_melt_metr['dataset_id'] = dataset_doi
+    else: # Otherwise use the dataset_name
+        df_melt_metr['dataset_id'] = dataset_name
+
+    # TODO consider how the formulation_id may need to be modified (E..g model version, ensemble, etc.)
+    df_melt_metr['formulation_id'] = formulation_id
+
+    # TODO allow output write to a variety of locations (e.g. local/cloud)
+    # Write data in long format
+    save_path = Path(Path(dir_save) / f'{dataset_name}_{formulation_id}.csv') 
+    df_melt_metr.to_csv(save_path)
+
     # Write metadata table corresponding to these metric data table(s) (e.g. startDate, endDate)
     save_path_meta = Path(Path(dir_save) / f'{dataset_name}_{formulation_id}_metadata.csv')
     

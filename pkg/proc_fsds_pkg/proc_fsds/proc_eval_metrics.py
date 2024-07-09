@@ -5,7 +5,7 @@
 
 Changelog/contributions
     2024-07-02 Originally created, GL
-    2024-07-09 added different file format/dir path options, GL
+    2024-07-09 added different file format/dir path options; add file format checkers, GL
 '''
 
 
@@ -127,8 +127,6 @@ def _proc_chck_input_df(df, col_schema_df):
     df.rename(columns = {gage_id : 'gage_id'},inplace=True)
     if not any(df.columns.str.contains('gage_id')):
         warnings.warn(f'Expecting one df column to be named: {gage_id} - per the config file. Inspect config file and/or dataframe col names')
-    
-
 
     # Set gage_id as the index
     if any(df['gage_id'].duplicated()):
@@ -152,8 +150,6 @@ def proc_col_schema(df, col_schema_df, dir_save, save_type = ['csv','netcdf','za
         2024-07-02, originally created, GL
     '''
     # Based on the standardized column schema naming conventions
-    metric_cols = col_schema_df['metric_cols'].iloc[0]
-    gage_id = col_schema_df['gage_id'].iloc[0]
     dataset_name =  col_schema_df['dataset_name'].iloc[0]
     formulation_id =  col_schema_df['formulation_id'].iloc[0]
     formulation_base =  col_schema_df['formulation_base'].iloc[0]
@@ -162,9 +158,6 @@ def proc_col_schema(df, col_schema_df, dir_save, save_type = ['csv','netcdf','za
     if formulation_id == None:
         # Create formulation_id as a combination of formulation_base and other elements
         formulation_id = '_'.join(list(filter(None,[formulation_base, '_v',col_schema_df['formulation_ver'].iloc[0],'_',col_schema_df['dataset_name']]))) 
-
-    # dataset_doi =  col_schema_df['dataset_doi'].iloc[0]
-    # literature_doi =  col_schema_df['literature_doi'].iloc[0]
     
     # Create the unique filename corresponding to a dataset & formulation
     uniq_filename = f'{dataset_name}_{formulation_id}'
@@ -177,7 +170,6 @@ def proc_col_schema(df, col_schema_df, dir_save, save_type = ['csv','netcdf','za
         print("TODO ensure connect credentials here")
         # TODO define _save_dir_base here in case .csv are desired in cloud
 
-
     # Run format checker/df renamer on input data based on config file's entries:
     df = _proc_chck_input_df(df,col_schema_df)
 
@@ -186,9 +178,8 @@ def proc_col_schema(df, col_schema_df, dir_save, save_type = ['csv','netcdf','za
     ds.attrs = col_schema_df.to_dict('index')[0]
     
     # TODO query a database for the lat/lon corresponding to the gage-id if lat/lon not already provided
-    
 
-
+    # Save the standardized dataset
     if save_type == 'csv' or save_type == 'parquet':
         if _other_save_dirs == None:
             raise ValueError('Expected _save_dir_struct to generate values in _other_save_dirs')

@@ -2,10 +2,12 @@
 @title: Helper functions for processing evaluation metrics datasets
 @author: Guy Litt <guy.litt@noaa.gov>
 @description: functions read in yaml schema and standardize metrics datasets
+@notes: developed using python v3.12
 
 Changelog/contributions
     2024-07-02 Originally created, GL
     2024-07-09 added different file format/dir path options; add file format checkers, GL
+
 '''
 
 
@@ -15,6 +17,7 @@ import yaml
 import xarray as xr
 import netCDF4
 import warnings
+import os
 
 def _proc_flatten_ls_of_dict_keys(config: dict, key: str) -> list:
     keys_cs = list()
@@ -53,7 +56,7 @@ def _proc_check_input_config(config: dict, std_keys = ['file_io','col_schema','f
     if not all([x in keys_file_io for x in req_file_io]):
         raise ValueError(f"The input config file expects the following defined under 'formulation_metadata': {', '.join(req_file_io)}")
 
-def read_schm_ls_of_dict(schema_path) -> pd.DataFrame:
+def read_schm_ls_of_dict(schema_path: str | os.PathLike) -> pd.DataFrame:
     '''
     @title: Read a dataset's schema file designed as a list of dicts
     @param: schema_path the filepath to the schema
@@ -78,7 +81,7 @@ def read_schm_ls_of_dict(schema_path) -> pd.DataFrame:
 
     return df_all
 
-def _save_dir_struct(dir_save, dataset_name: str, save_type:str ) -> tuple[Path, dict]:
+def _save_dir_struct(dir_save: str | os.PathLike, dataset_name: str, save_type:str ) -> tuple[Path, dict]:
     # Create a standard directory saving structure (in cases of local filesaving)
     save_dir_base = Path(Path(dir_save) / Path('user_data_std') / dataset_name)
     save_dir_base.mkdir(exist_ok=True, parents = True)
@@ -106,7 +109,7 @@ def _save_dir_struct(dir_save, dataset_name: str, save_type:str ) -> tuple[Path,
     return save_dir_base, other_save_dirs
 
 
-def _proc_chck_input_df(df, col_schema_df) -> pd.DataFrame:
+def _proc_chck_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.DataFrame:
     '''
     @title: Check input dataset for expected column
     @author: Guy Litt <guy.litt@noaa.gov>
@@ -135,7 +138,7 @@ def _proc_chck_input_df(df, col_schema_df) -> pd.DataFrame:
         df.set_index('gage_id', inplace=True)
     return df
 
-def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save, save_type = ['csv','netcdf','zarr'][2], save_loc = 'local' ) -> xr.Dataset:
+def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str | os.PathLike, save_type = ['csv','netcdf','zarr'][2], save_loc = 'local' ) -> xr.Dataset:
     '''
     @title: Process model evaluation metrics into individual standardized files and save a standardized metadata file.
     @author: Guy Litt <guy.litt@noaa.gov>

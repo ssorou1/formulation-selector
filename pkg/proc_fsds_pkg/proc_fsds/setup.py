@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 # > pip install -e ../proc_fsds
 setup(
     name="proc_fsds",
-    version="0.1",
+    version="0.1.1",
     author="Guy Litt",
     author_email="guy.litt@noaa.gov",
     description="A simple package for processing data in the formulation selection decision support tool",

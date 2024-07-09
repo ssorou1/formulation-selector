@@ -59,4 +59,4 @@ if __name__ == "__main__":
 
     # ------ Extract metric data and write to file
     print(f"Standardizing datasets and writing to {dir_save}")
-    df_melt_metr = proc_col_schema(df, col_schema_df, dir_save)
+    ds = proc_col_schema(df, col_schema_df, dir_save)

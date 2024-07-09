@@ -5,19 +5,23 @@ col_schema:   # required column mappings in the evaluation metrics dataset
 file_io: # May define {home_dir} for python's '{home_dir}/string_path'.format(home_dir =str(Path.home())) functionality
   - 'path_camels': '{home_dir}/noaa/camels2/camels_hydro.txt' # Path to the CAMELS basins dataset. CAMELS data should not always be a requirement for dataset processing, but serves to help analyze common catchments.
   - 'path_data': '{home_dir}/noaa/regionalization/data/julemai-xSSA/data_in/basin_metadata/basin_validation_results.txt' # Where the raw input data are stored.
-  - 'dir_save': '{home_dir}/noaa/regionalization/data/input/eval_metrics' # The save location of standardized output
+  - 'dir_save': '{home_dir}/noaa/regionalization/data/input' # The save location of standardized output
+  - 'save_type': 'csv' # Use 'csv' to create a directory structure & save multiple files. May also select 'hdf5' or 'zarr' for saving single structured files
+  - 'save_loc': 'local' # Use 'local' for saving to a local path via dir_save. Future work will create an approach for 'aws' or other cloud saving methods
 formulation_metadata:  
   - 'dataset_name': 'juliemai-xSSA' # Required. 
   - 'formulation_base': 'Raven_blended' # Required. Basename of formulation. the rr, sp, and gw will be added to this if 'formulation_id' is left empty
   - 'formulation_id': 'Raven_blended' # Optional alternative in lieu of generating a formulation_id based on 'formulation_base'. Should leave empty if automatic formulation_id generation desired.
+  - 'formulation_ver': # Optional. The version of the formulation
   - 'temporal_res': 'daily' # The temporal resolution corresponding to the modeled data
-  - 'target_var': 'Q' # The target variable modeled. This is standardized.
-  - 'start_date': # The start date corresponding to the evaluation metric's modeled timeseries
-  - 'end_date':  # The end date corresponding to the evaluation metric's modeled timeseries
-  - 'cal_yn': 'Y' # Required. Was the dataset calibrated? Y or N
-  - 'rr': 
-  - 'sp': 
-  - 'gw': 
+  - 'target_var': 'Q' # Required. The target variable modeled. This is standardized. See target_var_mappings in fsds_categories.yaml
+  - 'start_date': '1971-01-01' # Required. The YYYY-MM-DD start date corresponding to the evaluation metric's modeled timeseries
+  - 'end_date':  '1990-12-31' # Required. The YYYY-MM-DD end date corresponding to the evaluation metric's modeled timeseries
+  - 'modeled notes': 'Validation for basins with more than 5 years observed streamflow data'
+  - 'cal_status': 'Y' # Required. Was the formulation model fully calibrated? Options include 'Y','N', or 'S' (yes/no/somewhat)
+  - 'start_date_cal': '1991-01-01' # The YYYY-MM-DD start date corresponding to the calibration period
+  - 'end_date_cal': '2010-12-31' # The YYYY-MM-DD end date corresponding to the calibration period
+  - 'cal_notes': 'Calibration on basins larger than 300 km2 and more than 5 years observed streamflow data'
 references:
   - 'input_filepath': '{base_dir}/julemai-xSSA/data_in/basin_metadata/basin_validation_results.txt'
   - 'source_url': 'https://zenodo.org/records/5730428'

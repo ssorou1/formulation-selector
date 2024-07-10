@@ -2,10 +2,12 @@
 @title: Helper functions for processing evaluation metrics datasets
 @author: Guy Litt <guy.litt@noaa.gov>
 @description: functions read in yaml schema and standardize metrics datasets
+@notes: developed using python v3.12
 
 Changelog/contributions
     2024-07-02 Originally created, GL
     2024-07-09 added different file format/dir path options; add file format checkers, GL
+
 '''
 
 
@@ -15,14 +17,15 @@ import yaml
 import xarray as xr
 import netCDF4
 import warnings
+import os
 
-def _proc_flatten_ls_of_dict_keys(config, key):
+def _proc_flatten_ls_of_dict_keys(config: dict, key: str) -> list:
     keys_cs = list()
     for v in config[key]:
         keys_cs.append(list(v.keys()))
     return [x for xs in keys_cs for x in xs]
 
-def _proc_check_input_config(config, std_keys = ['file_io','col_schema','formulation_metadata','references'],
+def _proc_check_input_config(config: dict, std_keys = ['file_io','col_schema','formulation_metadata','references'],
                              req_col_schema = ['gage_id', 'metric_cols'],
                              req_form_meta = ['dataset_name','formulation_base','target_var','start_date', 'end_date','cal_status'],
                              req_file_io = ['dir_save', 'save_type','save_loc']):
@@ -53,7 +56,7 @@ def _proc_check_input_config(config, std_keys = ['file_io','col_schema','formula
     if not all([x in keys_file_io for x in req_file_io]):
         raise ValueError(f"The input config file expects the following defined under 'formulation_metadata': {', '.join(req_file_io)}")
 
-def read_schm_ls_of_dict(schema_path):
+def read_schm_ls_of_dict(schema_path: str | os.PathLike) -> pd.DataFrame:
     '''
     @title: Read a dataset's schema file designed as a list of dicts
     @param: schema_path the filepath to the schema
@@ -78,12 +81,12 @@ def read_schm_ls_of_dict(schema_path):
 
     return df_all
 
-def _save_dir_struct(dir_save, dataset_name, save_type):
+def _save_dir_struct(dir_save: str | os.PathLike, dataset_name: str, save_type:str ) -> tuple[Path, dict]:
     # Create a standard directory saving structure (in cases of local filesaving)
     save_dir_base = Path(Path(dir_save) / Path('user_data_std') / dataset_name)
     save_dir_base.mkdir(exist_ok=True, parents = True)
 
-    other_save_dirs = None
+    other_save_dirs = dict()
     if save_type == 'csv' or save_type == 'parquet': # For non-hierachical files
         # Otherwise single hierarchical files will be saved in lieu of subdirectories populated w/ .csv files
 
@@ -106,7 +109,7 @@ def _save_dir_struct(dir_save, dataset_name, save_type):
     return save_dir_base, other_save_dirs
 
 
-def _proc_chck_input_df(df, col_schema_df):
+def _proc_chck_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.DataFrame:
     '''
     @title: Check input dataset for expected column
     @author: Guy Litt <guy.litt@noaa.gov>
@@ -135,7 +138,7 @@ def _proc_chck_input_df(df, col_schema_df):
         df.set_index('gage_id', inplace=True)
     return df
 
-def proc_col_schema(df, col_schema_df, dir_save, save_type = ['csv','netcdf','zarr'][2], save_loc = 'local' ):
+def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str | os.PathLike, save_type = ['csv','netcdf','zarr'][2], save_loc = 'local' ) -> xr.Dataset:
     '''
     @title: Process model evaluation metrics into individual standardized files and save a standardized metadata file.
     @author: Guy Litt <guy.litt@noaa.gov>
@@ -181,7 +184,7 @@ def proc_col_schema(df, col_schema_df, dir_save, save_type = ['csv','netcdf','za
 
     # Save the standardized dataset
     if save_type == 'csv' or save_type == 'parquet':
-        if _other_save_dirs == None:
+        if len(_other_save_dirs) == 0:
             raise ValueError('Expected _save_dir_struct to generate values in _other_save_dirs')
 
         # TODO allow output write to a variety of locations (e.g. local/cloud)

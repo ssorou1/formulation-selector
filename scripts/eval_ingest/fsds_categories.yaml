@@ -21,6 +21,8 @@ metric_mappings_single_timeseries: # Refer to CIROH-funded TEEHR Metric List: ht
   - 'KGEmod1': 'Kling-Gupta efficiency from Kling et al 2012'
   - 'KGEmod2': 'Kling-Gupta efficiency from Clark et al 2021'
   - 'MSESS': 'mean square error skill score'
+metric_mappings_hydrotools: # TODO consider the metrics provided via hydrotools https://github.com/NOAA-OWP/hydrotools/tree/main/python/metrics
+  - 'NSE': 'Nash-Sutcliffe efficiency' # TODO fill the rest of this out?
 metric_mappings_signatures:
   - 'FDCSE': 'flow duration curve slope error'
   - 'APFRE': 'annual peak flow relative error'

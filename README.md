@@ -28,12 +28,6 @@ bash -c "$(curl -s https://raw.githubusercontent.com/NOAA-OWP/owp-open-source-pr
 
 As NOAA OWP builds the model-agnostic NextGen framework, the hydrologic modeling community will need to know how to optimally select model formulations and estimate parameter values across ungauged catchments. This problem becomes intractable when considering the unique combinations of current and future model formulations combined with the innumerable possible parameter combinations across the continent. To simplify the model selection problem, we apply an analytical tool that predicts hydrologic formulation performance (Bolotin et al., 2022, Liu et al., 2022) using community-generated data. The formulation selection decision support (FSDS) tool readily predicts how models might perform across catchments based on catchment attributes. This decision support tool is designed such that as the hydrologic modeling community generates more results, better decisions can be made on where formulations would be best suited. Here we present the baseline results on formulation selection and demonstrate how the hydrologic modeling community may participate in improving and/or using this tool.
 
-
-Bolotin, L.A., Haces-Garcia F., Liao, M., Liu, Q., Frame, J., Ogden FL (2022). Data-driven Model Selection in the Next Generation Water Resources Modeling Framework. 
-
-
-Liu et al. (2022) Automated Decision Support for Model Selection in the Nextgen National Water Model. Abstract (H45I-1503) presented at 2022 AGU Fall Meeting 12-16 Dec.
-
 Other things to include:
 
   - **Technology stack**: python
@@ -104,6 +98,11 @@ General instructions on _how_ to contribute should be stated with a link to [CON
 
 ----
 ## Credits and references
+
+Bolotin, LA, Haces-Garcia F, Liao, M, Liu, Q, Frame, J, Ogden FL (2022). Data-driven Model Selection in the Next Generation Water Resources Modeling Framework. In Deardorff, E., A. Modaresi Rad, et al. (2022). [National Water Center Innovators Program - Summer Institute, CUAHSI Technical Report](https://www.cuahsi.org/uploads/library/doc/SI2022_Report_v1.2.docx.pdf), HydroShare, http://www.hydroshare.org/resource/096e7badabb44c9f8c29751098f83afa
+
+Liu, Q, Bolotin, L, Haces-Garcia, F, Liao, M, Ogden, FL, Frame JM (2022) Automated Decision Support for Model Selection in the Nextgen National Water Model. Abstract (H45I-1503) presented at 2022 AGU Fall Meeting 12-16 Dec.
+
 
 1. Projects that inspired you
 2. Related projects

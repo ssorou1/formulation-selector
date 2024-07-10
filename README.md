@@ -102,8 +102,3 @@ General instructions on _how_ to contribute should be stated with a link to [CON
 Bolotin, LA, Haces-Garcia F, Liao, M, Liu, Q, Frame, J, Ogden FL (2022). Data-driven Model Selection in the Next Generation Water Resources Modeling Framework. In Deardorff, E., A. Modaresi Rad, et al. (2022). [National Water Center Innovators Program - Summer Institute, CUAHSI Technical Report](https://www.cuahsi.org/uploads/library/doc/SI2022_Report_v1.2.docx.pdf), HydroShare, http://www.hydroshare.org/resource/096e7badabb44c9f8c29751098f83afa
 
 Liu, Q, Bolotin, L, Haces-Garcia, F, Liao, M, Ogden, FL, Frame JM (2022) Automated Decision Support for Model Selection in the Nextgen National Water Model. Abstract (H45I-1503) presented at 2022 AGU Fall Meeting 12-16 Dec.
-
-
-1. Projects that inspired you
-2. Related projects
-3. Books, papers, talks, or other sources that have meaningful impact or influence on this project

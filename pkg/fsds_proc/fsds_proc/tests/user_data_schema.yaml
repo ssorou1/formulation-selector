@@ -6,7 +6,7 @@ file_io: # May define {home_dir} for python's '{home_dir}/string_path'.format(ho
   - 'path_camels': '{home_dir}/noaa/camels2/camels_hydro.txt' # Path to the CAMELS basins dataset. CAMELS data should not always be a requirement for dataset processing, but serves to help analyze common catchments.
   - 'path_data': '{home_dir}/noaa/regionalization/data/julemai-xSSA/data_in/basin_metadata/basin_validation_results.txt' # Where the raw input data are stored.
   - 'dir_save': '{home_dir}/noaa/regionalization/data/input' # Required. The save location of standardized output
-  - 'save_type': 'csv' #  Required. Use 'csv' to create a directory structure & save multiple files. May also select 'hdf5' or 'zarr' for saving single structured files
+  - 'save_type': 'csv' #  Required. Use 'csv' to create a directory structure & save multiple files. May also save as hierarchical files 'netcdf' or 'zarr', or if 'csv' chosen, a directory structure is created
   - 'save_loc': 'local' #  Required.  Use 'local' for saving to a local path via dir_save. Future work will create an approach for 'aws' or other cloud saving methods
 formulation_metadata:  
   - 'dataset_name': 'juliemai-xSSA' # Required. 
@@ -27,3 +27,4 @@ references: # All optional but **very** helpful metadata
   - 'source_url': 'https://zenodo.org/records/5730428'
   - 'dataset_doi': '10.5281/zenodo.5730428'
   - 'literature_doi': 'https://doi.org/10.1038/s41467-022-28010-7'
+

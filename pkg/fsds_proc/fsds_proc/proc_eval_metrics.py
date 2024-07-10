@@ -138,7 +138,7 @@ def _proc_chck_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.Dat
         df.set_index('gage_id', inplace=True)
     return df
 
-def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str | os.PathLike, save_type = ['csv','netcdf','zarr'][2], save_loc = 'local' ) -> xr.Dataset:
+def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str | os.PathLike) -> xr.Dataset:
     '''
     @title: Process model evaluation metrics into individual standardized files and save a standardized metadata file.
     @author: Guy Litt <guy.litt@noaa.gov>
@@ -146,9 +146,10 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
     The standard format is the following columns: 'gage_id', 'metric', 'metric_val'
     @param: df pd.DataFrame type. The dataset of interest containing at a minimum catchment ID and evaluation metrics
     @param: col_schema_df pd.DataFrame type. The column schema naming convention ingested from the yaml file corresponding to the dataset.
+    , save_type = ['csv','netcdf','zarr'][2], save_loc = 'local' 
     @param: dir_save str or pathlib.Path type. Path for saving the standardized metric data file(s) and the metadata file.
     @param: save_type. Default 'zarr'. May save as hierarchical files 'netcdf' or 'zarr', or if 'csv' chosen, a directory structure is created
-
+    
     Changelog/contributions
         2024-07-02, originally created, GL
     '''

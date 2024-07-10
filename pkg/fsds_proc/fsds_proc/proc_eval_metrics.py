@@ -39,7 +39,7 @@ def _proc_check_input_config(config: dict, std_keys = ['file_io','col_schema','f
     # Expected standard keys:
     chck_dict = {key: config[key] for key in std_keys}
     if len(chck_dict) != len(std_keys):
-        raise ValueError(f'The provided keys in the input config file should include the following: {', '.join(std_keys)}')
+        raise ValueError(f'The provided keys in the input config file should include the following: {", ".join(std_keys)}')
     
     # required keys defined inside col_schema
     keys_col_schema = _proc_flatten_ls_of_dict_keys(config, 'col_schema')
@@ -125,7 +125,7 @@ def _proc_chck_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.Dat
     metric_cols = col_schema_df['metric_cols'].iloc[0]
     metrics = metric_cols.split('|')
     if df.columns.str.contains(metric_cols).sum() != len(metrics):
-        warnings.warn(f'Not all metric columns {metric_cols} are inside df columns. Revise the config file or ensure the input data is in appropriate format (i.e. wide format for each variable)')
+        warnings.warn(f'Not all metric columns {', '.join(metrics)} are inside df columns. Revise the config file or ensure the input data is in appropriate format (i.e. wide format for each variable)')
     # Change the name to gage_id    
     df.rename(columns = {gage_id : 'gage_id'},inplace=True)
     if not any(df.columns.str.contains('gage_id')):

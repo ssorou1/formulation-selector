@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 # > python setup.py sdist bdist_wheel
 # > pip install -e ../proc_fsds
 setup(
-    name="proc_fsds",
+    name="fsds_proc",
     version="0.1.1",
     author="Guy Litt",
     author_email="guy.litt@noaa.gov",

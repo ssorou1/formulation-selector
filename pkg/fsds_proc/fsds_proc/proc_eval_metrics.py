@@ -18,6 +18,7 @@ import xarray as xr
 import netCDF4
 import warnings
 import os
+import shutil
 
 def _proc_flatten_ls_of_dict_keys(config: dict, key: str) -> list:
     keys_cs = list()
@@ -174,6 +175,7 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
     Changelog/contributions
         2024-07-02, originally created, GL
     """
+    print(f"Standardizing datasets and writing to {dir_save}")
     # Based on the standardized column schema naming conventions
     dataset_name =  col_schema_df['dataset_name'].iloc[0]
     formulation_id =  col_schema_df['formulation_id'].iloc[0]
@@ -222,12 +224,14 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
             col_schema_df.to_csv(save_path_meta)
         else:
             col_schema_df.to_parquet(Path(str(save_path_meta).replace('.csv','.parquet')))
-
+        print(f"Saved files within a sub-directory structure inside {dir_save}")
     elif save_type == 'netcdf':
         save_path_nc = Path(_save_dir_base/Path(f'{uniq_filename}.nc'))
         ds.to_netcdf(save_path_nc)
+        print(f"Saved netcdf file as {save_path_nc}")
     elif save_type == 'zarr':
         save_path_zarr = Path(_save_dir_base/Path(f'{uniq_filename}_zarr'))
-        ds.to_zarr(save_path_zarr)     
-
+        shutil.rmtree(save_path_zarr) # Delete any pre-existing zarr data in the same directory
+        ds.to_zarr(save_path_zarr)   # Re-write to directory
+        print(f"Saved zarr files inside {save_path_zarr}")
     return ds # Returning not intended use case, but it's an option

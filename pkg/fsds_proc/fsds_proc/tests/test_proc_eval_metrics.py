@@ -38,6 +38,7 @@ dir_save = tempfile.gettempdir()
 
 # Reads the testing config dataframe
 exp_config_df = pd.read_csv(Path(parent_dir_test/Path("test_config_df.csv")), index_col=None)
+
 class TestReadSchmLsOfDict(unittest.TestCase):
     '''
     A normal run
@@ -62,9 +63,25 @@ class TestProcColSchema(unittest.TestCase):
     def test_dataset_type(self):
         self.assertIsInstance(self.ds, xr.Dataset)
 
+    def test_written_dir_exists(self):
+        self.assertTrue(Path(dir_save/Path('user_data_std')).resolve().is_dir())
+
+    def test_written_file_exists(self):
+        self.assertTrue(Path(dir_save/Path('user_data_std/juliemai-xSSA/eval/metrics/juliemai-xSSA_Raven_blended.csv')).resolve().is_file())
 
     def test_dataset_vars(self):
-       self.assertEqual(list(self.ds.keys()),['Unnamed: 0','basin_name','nse','rmse','kge'])
+        self.assertEqual(list(self.ds.keys()),['Unnamed: 0','basin_name','nse','rmse','kge'])
+
+class TestProcColSchemaHier(unittest.TestCase):
+    global test_df
+    global dir_save
+    global exp_config_df
+    zarr_config_df = exp_config_df.copy()
+    zarr_config_df['save_type'] = 'zarr'
+    dsz = proc_col_schema(test_df,zarr_config_df, dir_save)
+
+    def test_hier_file_exists(self):
+         self.assertTrue(Path(dir_save/Path('user_data_std/juliemai-xSSA/')).resolve().is_file())
 
 class TestProcCheckInputConfig(unittest.TestCase):
     

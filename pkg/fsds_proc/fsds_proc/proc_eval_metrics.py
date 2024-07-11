@@ -231,7 +231,8 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
         print(f"Saved netcdf file as {save_path_nc}")
     elif save_type == 'zarr':
         save_path_zarr = Path(_save_dir_base/Path(f'{uniq_filename}_zarr'))
-        shutil.rmtree(save_path_zarr) # Delete any pre-existing zarr data in the same directory
+        if os.path.exists(save_path_zarr):
+            shutil.rmtree(save_path_zarr) # Delete any pre-existing zarr data in the same directory
         ds.to_zarr(save_path_zarr)   # Re-write to directory
         print(f"Saved zarr files inside {save_path_zarr}")
     return ds # Returning not intended use case, but it's an option

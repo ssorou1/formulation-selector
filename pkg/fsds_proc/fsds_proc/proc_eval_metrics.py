@@ -200,7 +200,7 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
 
     # Convert dataframe to the xarray dataset and add metadata:
     ds = df.to_xarray()
-    ds.attrs = col_schema_df.to_dict('index')[0]
+    ds.attrs = col_schema_df.fillna('').to_dict('index')[0]
     
     # TODO query a database for the lat/lon corresponding to the gage-id if lat/lon not already provided
 
@@ -227,7 +227,7 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
         save_path_nc = Path(_save_dir_base/Path(f'{uniq_filename}.nc'))
         ds.to_netcdf(save_path_nc)
     elif save_type == 'zarr':
-        save_path_zarr = Path(_save_dir_base/Path(f'{uniq_filename}.zarr'))
+        save_path_zarr = Path(_save_dir_base/Path(f'{uniq_filename}_zarr'))
         ds.to_zarr(save_path_zarr)     
 
     return ds # Returning not intended use case, but it's an option

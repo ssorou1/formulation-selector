@@ -118,7 +118,7 @@ def _save_dir_struct(dir_save: str | os.PathLike, dataset_name: str, save_type:s
     return save_dir_base, other_save_dirs
 
 
-def _proc_chck_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.DataFrame:
+def _proc_check_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.DataFrame:
     """
     Checks the input dataset for consistency in expected column format as generated from the yaml config file.
 
@@ -132,6 +132,7 @@ def _proc_chck_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.Dat
     note::
     Changelog/contributions
         2024-07-09, originally created, GL
+        2024-07-11, bugfix in case index is already named 'gage_id', GL
     """
 
 
@@ -140,16 +141,17 @@ def _proc_chck_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.Dat
     metrics = metric_cols.split('|')
     if df.columns.str.contains(metric_cols).sum() != len(metrics):
         warnings.warn(f'Not all metric columns {', '.join(metrics)} are inside df columns. Revise the config file or ensure the input data is in appropriate format (i.e. wide format for each variable)')
-    # Change the name to gage_id    
-    df.rename(columns = {gage_id : 'gage_id'},inplace=True)
-    if not any(df.columns.str.contains('gage_id')):
-        warnings.warn(f'Expecting one df column to be named: {gage_id} - per the config file. Inspect config file and/or dataframe col names')
-
-    # Set gage_id as the index
-    if any(df['gage_id'].duplicated()):
-        warnings.warn('Expect only one gage_id for each row in the data. Convert df to wide format when passing to proc_col_schema(). This could create problems if writing standardized data in hierarchical format.')
-    else: # We can set the index as 'gage_id'
-        df.set_index('gage_id', inplace=True)
+ 
+    if not df.index.name == 'gage_id':
+        # Change the name to gage_id   
+        df.rename(columns = {gage_id : 'gage_id'},inplace=True)
+        if not any(df.columns.str.contains('gage_id')):
+            warnings.warn(f'Expecting one df column to be named: {gage_id} - per the config file. Inspect config file and/or dataframe col names')
+        # Set gage_id as the index
+        if any(df['gage_id'].duplicated()):
+            warnings.warn('Expect only one gage_id for each row in the data. Convert df to wide format when passing to proc_col_schema(). This could create problems if writing standardized data in hierarchical format.')
+        else: # We can set the index as 'gage_id'
+            df.set_index('gage_id', inplace=True)
     return df
 
 def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str | os.PathLike) -> xr.Dataset:
@@ -194,7 +196,7 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
         # TODO define _save_dir_base here in case .csv are desired in cloud
 
     # Run format checker/df renamer on input data based on config file's entries:
-    df = _proc_chck_input_df(df,col_schema_df)
+    df = _proc_check_input_df(df,col_schema_df)
 
     # Convert dataframe to the xarray dataset and add metadata:
     ds = df.to_xarray()

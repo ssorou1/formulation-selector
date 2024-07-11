@@ -44,7 +44,7 @@ exp_config_df = pd.read_csv(Path(parent_dir_test/Path("test_config_df.csv")), in
 
 class TestReadSchmLsOfDict(unittest.TestCase):
     '''
-    A normal run
+    A normal run. This test needs to be updated (write new df example) anytime the user_data_schema.yaml changes.
     '''
     def test_identical(self):
         global parent_dir_test
@@ -84,7 +84,7 @@ class TestProcColSchemaHier(unittest.TestCase):
     dsz = proc_col_schema(test_df,zarr_config_df, dir_save)
 
     def test_hier_file_exists(self):
-         self.assertTrue(Path(dir_save/Path('user_data_std/juliemai-xSSA/')).resolve().is_file())
+         self.assertTrue(list(Path(self.dir_save/Path('user_data_std/juliemai-xSSA/')).glob('*.zarr')).is_file())
 
 class TestProcCheckInputConfig(unittest.TestCase):
     

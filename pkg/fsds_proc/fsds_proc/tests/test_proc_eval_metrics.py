@@ -4,6 +4,11 @@ Unit tests for the fsds_proc package
 example::
 > cd /path/to/fsds_proc/fsds_proc/tests/
 > python -m unittest test_proc_eval_metrics.py
+or if interested in unit testing coverage:
+> python -m coverage run -m unittest
+> python -m coverage report 
+# and may also run the following to generate an html: > python -m coverage html 
+
 
 notes::
 Changelog/contributions
@@ -86,13 +91,12 @@ class TestProcColSchemaHier(unittest.TestCase):
     dsnc = proc_col_schema(test_df,nc_config_df, dir_save)
     def test_hier_nc_exists(self):
         self.assertTrue(list(Path(dir_save/Path('user_data_std/juliemai-xSSA/')).glob('*.nc'))[0].is_file())
-        
+
     # # specifiy zarr config
     # zarr_config_df = exp_config_df.copy()
     # zarr_config_df['save_type'] = 'zarr'
     # dsz = proc_col_schema(test_df,zarr_config_df, dir_save)
     # def test_hier_file_exists(self):
-
     #      self.assertTrue(list(Path(dir_save/Path('user_data_std/juliemai-xSSA/')).glob('*/*.zattrs'))[0].is_file())
 
 class TestProcCheckInputConfig(unittest.TestCase):

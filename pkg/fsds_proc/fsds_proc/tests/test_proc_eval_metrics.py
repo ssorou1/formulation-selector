@@ -25,7 +25,7 @@ print(parent_dir_test)
 schema_dir_test = Path(parent_dir_test/Path("user_data_schema.yaml"))
 
 # Load the user-specific metrics dataset
-test_dat_user = pd.read_csv(Path(parent_dir_test/Path("user_metric_data.csv")))
+test_df = pd.read_csv(Path(parent_dir_test/Path("user_metric_data.csv")))
 
 # Load the YAML configuration file
 with open(schema_dir_test, 'r') as file:
@@ -34,8 +34,10 @@ with open(schema_dir_test, 'r') as file:
 # Define the unit test saving directory as a temp dir
 dir_save = tempfile.gettempdir()
 
-config_df = read_schm_ls_of_dict(schema_dir_test)
+# = read_schm_ls_of_dict(schema_dir_test)
 
+# Reads the testing config dataframe
+exp_config_df = pd.read_csv(Path(parent_dir_test/Path("test_config_df.csv")), index_col=None)
 class TestReadSchmLsOfDict(unittest.TestCase):
     '''
     A normal run
@@ -43,7 +45,7 @@ class TestReadSchmLsOfDict(unittest.TestCase):
     def test_identical(self):
         global parent_dir_test
         global schema_dir_test
-        exp_config_df = pd.read_csv(Path(parent_dir_test/Path("test_config_df.csv")), index_col=False)
+        global exp_config_df
         gen_config_df = read_schm_ls_of_dict(schema_dir_test)
         pd.testing.assert_frame_equal(exp_config_df, gen_config_df, check_dtype = False)
 
@@ -52,13 +54,13 @@ class TestProcColSchema(unittest.TestCase):
     '''
     A normal run
     '''
-    global config_df
+    global test_df
     global dir_save
-    exp_config_df = pd.read_csv(Path(parent_dir_test/Path("test_config_df.csv")), index_col=False)
-    dds = proc_col_schema(exp_config_df, config_df, dir_save)
+    global exp_config_df
+    ds = proc_col_schema(test_df, exp_config_df, dir_save)
 
     def test_dataset_type(self):
-        self.assertIsInstance(self.dds, xr.Dataset)
+        self.assertIsInstance(self.ds, xr.Dataset)
 
 class TestProcCheckInputConfig(unittest.TestCase):
     

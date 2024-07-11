@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 # Instructions for build & install in terminal:
 # > cd /path/to/proc_fsds/
 # > python setup.py sdist bdist_wheel
-# > pip install -e ../proc_fsds
+# > pip install -e ./
 setup(
     name="fsds_proc",
-    version="0.1.1",
+    version="0.1.2",
     author="Guy Litt",
     author_email="guy.litt@noaa.gov",
     description="A simple package for processing data in the formulation selection decision support tool",

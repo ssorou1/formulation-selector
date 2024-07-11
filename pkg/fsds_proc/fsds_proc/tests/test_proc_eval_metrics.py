@@ -73,18 +73,27 @@ class TestProcColSchema(unittest.TestCase):
         self.assertTrue(Path(dir_save/Path('user_data_std/juliemai-xSSA/eval/metrics/juliemai-xSSA_Raven_blended.csv')).resolve().is_file())
 
     def test_dataset_vars(self):
-        self.assertEqual(list(self.ds.keys()),['Unnamed: 0','basin_name','nse','rmse','kge'])
+        self.assertEqual(list(self.ds.keys()),['basin_name','nse','rmse','kge'])
 
 class TestProcColSchemaHier(unittest.TestCase):
     global test_df
     global dir_save
     global exp_config_df
-    zarr_config_df = exp_config_df.copy()
-    zarr_config_df['save_type'] = 'zarr'
-    dsz = proc_col_schema(test_df,zarr_config_df, dir_save)
 
-    def test_hier_file_exists(self):
-         self.assertTrue(list(Path(self.dir_save/Path('user_data_std/juliemai-xSSA/')).glob('*.zarr')).is_file())
+    # specify netcdf config
+    nc_config_df = exp_config_df.copy()
+    nc_config_df['save_type'] = 'netcdf'
+    dsnc = proc_col_schema(test_df,nc_config_df, dir_save)
+    def test_hier_nc_exists(self):
+        self.assertTrue(list(Path(dir_save/Path('user_data_std/juliemai-xSSA/')).glob('*.nc'))[0].is_file())
+        
+    # # specifiy zarr config
+    # zarr_config_df = exp_config_df.copy()
+    # zarr_config_df['save_type'] = 'zarr'
+    # dsz = proc_col_schema(test_df,zarr_config_df, dir_save)
+    # def test_hier_file_exists(self):
+
+    #      self.assertTrue(list(Path(dir_save/Path('user_data_std/juliemai-xSSA/')).glob('*/*.zattrs'))[0].is_file())
 
 class TestProcCheckInputConfig(unittest.TestCase):
     

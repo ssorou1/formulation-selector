@@ -15,7 +15,7 @@ import yaml
 import tempfile
 import xarray as xr
 from fsds_proc.proc_eval_metrics import read_schm_ls_of_dict, proc_col_schema, _proc_check_input_config, _proc_flatten_ls_of_dict_keys
-
+import numpy as np
 
 # TODO move setup.py to ../setup.py and call > python -m unittest tests.test_proc_eval_metrics
 
@@ -46,7 +46,7 @@ class TestReadSchmLsOfDict(unittest.TestCase):
         global parent_dir_test
         global schema_dir_test
         global exp_config_df
-        gen_config_df = read_schm_ls_of_dict(schema_dir_test)
+        gen_config_df = read_schm_ls_of_dict(schema_dir_test).fillna(np.nan).infer_objects(copy=False)
         pd.testing.assert_frame_equal(exp_config_df, gen_config_df, check_dtype = False)
 
 
@@ -62,25 +62,29 @@ class TestProcColSchema(unittest.TestCase):
     def test_dataset_type(self):
         self.assertIsInstance(self.ds, xr.Dataset)
 
+
+    def test_dataset_vars(self):
+       self.assertEqual(list(self.ds.keys()),['Unnamed: 0','basin_name','nse','rmse','kge'])
+
 class TestProcCheckInputConfig(unittest.TestCase):
     
     def test_std_keys(self):
         global config
         with self.assertRaises(Exception) as context:
-            _proc_check_input_config(config, std_keys = ['not the standard keys'])
+            _proc_check_input_config(config, std_keys=['not the standard keys'])
             self.assertTrue(' provided keys in the input config file' in str(context.exception))
     def test_std_col(self):
         global config
         self.assertRaises(ValueError, 
-                          _proc_check_input_config, config, req_col_schema = ['not the standard col names'])
+                          _proc_check_input_config, config, req_col_schema=['not the standard col names'])
     def test_form_meta(self):
         global config
         self.assertRaises(ValueError, 
-                          _proc_check_input_config, config, req_form_meta = ['not the standard formulation metadata'])
+                          _proc_check_input_config, config, req_form_meta=['not the standard formulation metadata'])
     def test_file_io(self):
         global config
         self.assertRaises(ValueError, 
-                          _proc_check_input_config, config, req_file_io = ['not the standard dir or save keys'])
+                          _proc_check_input_config, config, req_file_io=['not the standard dir or save keys'])
 
 
 

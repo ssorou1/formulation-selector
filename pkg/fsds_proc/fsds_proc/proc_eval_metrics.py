@@ -1,8 +1,8 @@
 '''
-@title: Helper functions for processing evaluation metrics datasets
-@author: Guy Litt <guy.litt@noaa.gov>
-@description: functions read in yaml schema and standardize metrics datasets
-@notes: developed using python v3.12
+Helper functions for processing evaluation metrics datasets
+author:: Guy Litt <guy.litt@noaa.gov>
+description:: functions read in yaml schema and standardize metrics datasets
+notes:: developed using python v3.12
 
 Changelog/contributions
     2024-07-02 Originally created, GL
@@ -25,17 +25,23 @@ def _proc_flatten_ls_of_dict_keys(config: dict, key: str) -> list:
         keys_cs.append(list(v.keys()))
     return [x for xs in keys_cs for x in xs]
 
-def _proc_check_input_config(config: dict, std_keys = ['file_io','col_schema','formulation_metadata','references'],
-                             req_col_schema = ['gage_id', 'metric_cols'],
-                             req_form_meta = ['dataset_name','formulation_base','target_var','start_date', 'end_date','cal_status'],
-                             req_file_io = ['dir_save', 'save_type','save_loc']):
-    '''
-    @title: Check input config file to ensure it contains the minimum expected categories
-    @author: Guy Litt <guy.litt@noaa.gov>
-    @seealso: read_schm_ls_of_dict()
-    #TODO add further checks after testing more datasets
-    '''
+def _proc_check_input_config(config: dict, std_keys=['file_io','col_schema','formulation_metadata','references'],
+                             req_col_schema=['gage_id', 'metric_cols'],
+                             req_form_meta=['dataset_name','formulation_base','target_var','start_date', 'end_date','cal_status'],
+                             req_file_io=['dir_save', 'save_type','save_loc']):
+    
+    """
+    Check input config file to ensure it contains the minimum expected categories
 
+    :raises ValueError: _description_
+    :raises ValueError: _description_
+    :raises ValueError: _description_
+    :raises ValueError: _description_
+
+    seealso:: :func: `read_schm_ls_of_dict`
+    :TODO: add further checks after testing more datasets
+
+    """
     # Expected standard keys:
     chck_dict = {key: config[key] for key in std_keys}
     if len(chck_dict) != len(std_keys):
@@ -57,13 +63,16 @@ def _proc_check_input_config(config: dict, std_keys = ['file_io','col_schema','f
         raise ValueError(f"The input config file expects the following defined under 'formulation_metadata': {', '.join(req_file_io)}")
 
 def read_schm_ls_of_dict(schema_path: str | os.PathLike) -> pd.DataFrame:
-    '''
-    @title: Read a dataset's schema file designed as a list of dicts
-    @param: schema_path the filepath to the schema
+    """Read a dataset's schema file designed as a list of dicts
 
+    :param schema_path: _description_
+    :type schema_path: str | os.PathLike
+    :return: he filepath to the schema
+    :rtype: pd.DataFrame
+    note::
     Changelog/contributions
         2024-07-02 Originally created, GL
-    '''
+    """
     # Load the YAML configuration file
     with open(schema_path, 'r') as file:
         config = yaml.safe_load(file)
@@ -110,17 +119,22 @@ def _save_dir_struct(dir_save: str | os.PathLike, dataset_name: str, save_type:s
 
 
 def _proc_chck_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.DataFrame:
-    '''
-    @title: Check input dataset for expected column
-    @author: Guy Litt <guy.litt@noaa.gov>
-    @description: Checks the input dataset for consistency in expected format as generated from the yaml config file.
-    @param: df pd.DataFrame type. The dataset of interest containing at a minimum catchment ID and evaluation metrics
-    @param: col_schema_df pd.DataFrame type. The column schema naming convention ingested from the yaml file corresponding to the dataset.
-    @returns: df in wide format ensuring that the unique identifier for each row is 'gage_id'
+    """
+    Checks the input dataset for consistency in expected column format as generated from the yaml config file.
 
+    :param df: The dataset of interest containing at a minimum catchment ID and evaluation metrics
+    :type df: pd.DataFrame
+    :param col_schema_df: The column schema naming convention ingested from the yaml file corresponding to the dataset.
+    :type col_schema_df: pd.DataFrame
+    :return: wide format df ensuring that the unique identifier for each row is 'gage_id'
+    :rtype: pd.DataFrame
+
+    note::
     Changelog/contributions
         2024-07-09, originally created, GL
-    '''
+    """
+
+
     gage_id = col_schema_df['gage_id'].iloc[0]
     metric_cols = col_schema_df['metric_cols'].iloc[0]
     metrics = metric_cols.split('|')
@@ -139,20 +153,25 @@ def _proc_chck_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.Dat
     return df
 
 def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str | os.PathLike) -> xr.Dataset:
-    '''
-    @title: Process model evaluation metrics into individual standardized files and save a standardized metadata file.
-    @author: Guy Litt <guy.litt@noaa.gov>
-    @description: Creates an individual data file for each metric, and saves a metadata file in the dir_save.
-    The standard format is the following columns: 'gage_id', 'metric', 'metric_val'
-    @param: df pd.DataFrame type. The dataset of interest containing at a minimum catchment ID and evaluation metrics
-    @param: col_schema_df pd.DataFrame type. The column schema naming convention ingested from the yaml file corresponding to the dataset.
-    , save_type = ['csv','netcdf','zarr'][2], save_loc = 'local' 
-    @param: dir_save str or pathlib.Path type. Path for saving the standardized metric data file(s) and the metadata file.
-    @param: save_type. Default 'zarr'. May save as hierarchical files 'netcdf' or 'zarr', or if 'csv' chosen, a directory structure is created
-    
+    """
+    Process model evaluation metrics into individual standardized files and save a standardized metadata file.
+
+    :param df: pd.DataFrame type. The dataset of interest containing at a minimum catchment ID and evaluation metrics
+    :type df: pd.DataFrame
+    :param col_schema_df: The column schema naming convention ingested from the yaml file corresponding to the dataset. C
+    :type col_schema_df: pd.DataFrame
+    :param dir_save: Path for saving the standardized metric data file(s) and the metadata file.
+    :type dir_save: str | os.PathLike
+    :raises ValueError: _description_
+    :return: _description_
+    :rtype: xr.Dataset
+
+    seealso:: :func:`read_schm_ls_of_dict`
+
+    note:: 
     Changelog/contributions
         2024-07-02, originally created, GL
-    '''
+    """
     # Based on the standardized column schema naming conventions
     dataset_name =  col_schema_df['dataset_name'].iloc[0]
     formulation_id =  col_schema_df['formulation_id'].iloc[0]

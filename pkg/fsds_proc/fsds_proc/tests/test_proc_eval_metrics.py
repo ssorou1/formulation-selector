@@ -1,10 +1,13 @@
 '''
 Unit tests for the fsds_proc package
-@author: Guy Litt <guy.litt@noaa.gov>
 
+example::
+> cd /path/to/fsds_proc/fsds_proc/tests/
+> python -m unittest test_proc_eval_metrics.py
 
+notes::
 Changelog/contributions
-    2024-07-10 Originally created, GL
+    2024-07-11 Originally created, GL
 '''
 
 

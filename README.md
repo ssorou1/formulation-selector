@@ -19,7 +19,7 @@
 You may also run unit tests on `fsds_proc`:
 ```
 > cd ./tests
-> python -m unittest test_procz_eval_metrics.py
+> python -m unittest test_proc_eval_metrics.py
 ```
 To assess code coverage:
 ```

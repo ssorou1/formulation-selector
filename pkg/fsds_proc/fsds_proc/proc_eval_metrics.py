@@ -86,7 +86,7 @@ def _proc_check_input_config(config: dict, std_keys=['file_io','col_schema','for
     # Expected standard keys:
     chck_dict = {key: config[key] for key in std_keys}
     if len(chck_dict) != len(std_keys):
-        raise ValueError(f'The provided keys in the input config file should include the following: {", ".join(std_keys)}')
+        raise ValueError(f"The provided keys in the input config file should include the following: {', '.join(std_keys)}")
     
     # required keys defined inside col_schema
     keys_col_schema = _proc_flatten_ls_of_dict_keys(config, 'col_schema')
@@ -162,7 +162,7 @@ def _proc_check_std_fsds_ids(vars: list, category=['metric','target_var'][0]):
     """
     Run check to ensure that variables are listed in the standardized fsds_categories.yaml
 
-    :param vars: user-defined variable listing. In the case of a list
+    :param vars: user-defined variable listing. 
     :type vars: list
     :param category: choose the category of 'metric' or 'target_var'. Defaults to 'metric'
     :type category: list, optional
@@ -179,8 +179,8 @@ def _proc_check_std_fsds_ids(vars: list, category=['metric','target_var'][0]):
     
     if not all(bool_chck):
         bad_vars = list(compress(vars,[not x for x in bool_chck]))
-        raise ValueError(f'The following {category} mappings defined in the dataset schema do not correspond to the standardized {category} names: \
-                         \n {", ".join(bad_vars)} \n Allowable variables include: {','.join(sub_std_config['var'])}')
+        allowable_vars = ",".join(sub_std_config['var'])
+        raise ValueError(f'The following {category} mappings defined in the dataset schema do not correspond to the standardized {category} names: \n {", ".join(bad_vars)} \n Allowable variables include: {allowable_vars}')
     else:
         print('The {category} mappings from the dataset schema match expected format.')
 
@@ -208,7 +208,8 @@ def _proc_check_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.Da
     metrics = metric_cols.split('|')
 
     if df.columns.str.contains(metric_cols).sum() != len(metrics):
-        warnings.warn(f'Not all metric columns {', '.join(metrics)} are inside df columns. Revise the config file or ensure the input data is in appropriate format (i.e. wide format for each variable)')
+
+        warnings.warn(f'Not all metric columns {", ".join(metrics)} are inside df columns. Revise the config file or ensure the input data is in appropriate format (i.e. wide format for each variable)')
  
     if not df.index.name == 'gage_id':
         # Change the name to gage_id   
@@ -224,8 +225,8 @@ def _proc_check_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.Da
 
     # Standardize the metrics
     metric_mappings = col_schema_df['metric_mappings'][0].split('|')
-    # Run check that mappings are part of standardized column naming
 
+    # Run check that mappings are part of standardized column naming
     _proc_check_std_fsds_ids(metric_mappings, category = 'metric')
 
     # rename metrics to the standardized format

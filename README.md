@@ -1,3 +1,30 @@
+
+----
+
+# Formulation Selection Decision Support (FSDS)
+
+**Description**:  
+The formulation-selection decision support tool (FSDS) is under development.
+
+As NOAA OWP builds the model-agnostic NextGen framework, the hydrologic modeling community will need to know how to optimally select model formulations and estimate parameter values across ungauged catchments. This problem becomes intractable when considering the unique combinations of current and future model formulations combined with the innumerable possible parameter combinations across the continent. To simplify the model selection problem, we apply an analytical tool that predicts hydrologic formulation performance (Bolotin et al., 2022, Liu et al., 2022) using community-generated data. The formulation selection decision support (FSDS) tool readily predicts how models might perform across catchments based on catchment attributes. This decision support tool is designed such that as the hydrologic modeling community generates more results, better decisions can be made on where formulations would be best suited. Here we present the baseline results on formulation selection and demonstrate how the hydrologic modeling community may participate in improving and/or using this tool.
+
+Other things to include:
+
+  - **Technology stack**: python. The formulation-selection decision support tool is intended to be a standalone analysis, though integration with pre-existing formulation evaluation metrics tools will eventually occur.
+  - **Status**:  Preliminary development. [CHANGELOG](CHANGELOG.md)._
+  - **Links to production or demo instances**
+  - _Describe what sets this apart from related-projects. Linking to another doc or page is OK if this can't be expressed in a sentence or two._
+
+
+**Screenshot**: If the software has visual components, place a screenshot after the description; e.g.,
+N/A
+
+## Dependencies
+
+Describe any dependencies that must be installed for this software to work.
+This includes programming languages, databases or other storage mechanisms, build tools, frameworks, and so forth.
+If specific versions of other software are required, or known not to work, call that out.
+
 ## Installation
 
 ### TLDR
@@ -16,16 +43,7 @@
 > cd /path/to/pkg/proc_fsds/proc_fsds
 > pip install .
 ```
-You may also run unit tests on `fsds_proc`:
-```
-> cd ./tests
-> python -m unittest test_proc_eval_metrics.py
-```
-To assess code coverage:
-```
-python -m coverage run -m unittest
-python -m coverage report
-```
+
 ### 2. Build a custom model metrics data ingest
 Ingesting raw data describing model metrics (e.g. KGE, NSE) from modeling simulations requires two tasks:
    1. Creating a custom configuration schema as a .yaml file
@@ -47,46 +65,7 @@ The script that converts the raw data into the desired format. This performs the
  - Modify the raw data to become wide-format where columns consist of the gage id and separate columns for each formulation evaluation metric (user-developed munging)
  - Call the `fsds_proc.proc_col_schema()` to standardize the dataset into a common format (standardized function call)
 
-#### 3. Run the new script
-  ```
-  cd /path/to/scripts/eval_metrics/name_of_dataset_here/
-  python proc_name_of_dataset_here_metrics.py "name_of dataset_here_schema.yaml"
-  ```
 
-----
-
-# Formulation Selection Decision Support (FSDS)
-
-**Description**:  T
-The formulation-selection decision support tool (FSDS) is under development.
-
-As NOAA OWP builds the model-agnostic NextGen framework, the hydrologic modeling community will need to know how to optimally select model formulations and estimate parameter values across ungauged catchments. This problem becomes intractable when considering the unique combinations of current and future model formulations combined with the innumerable possible parameter combinations across the continent. To simplify the model selection problem, we apply an analytical tool that predicts hydrologic formulation performance (Bolotin et al., 2022, Liu et al., 2022) using community-generated data. The formulation selection decision support (FSDS) tool readily predicts how models might perform across catchments based on catchment attributes. This decision support tool is designed such that as the hydrologic modeling community generates more results, better decisions can be made on where formulations would be best suited. Here we present the baseline results on formulation selection and demonstrate how the hydrologic modeling community may participate in improving and/or using this tool.
-
-Other things to include:
-
-  - **Technology stack**: python
-  - _Indicate the technological nature of the software, including primary programming language(s) and whether the software is intended as standalone or as a module in a framework or other ecosystem._
-  - **Status**:  Preliminary development _Alpha, Beta, 1.1, etc. It's OK to write a sentence, too. The goal is to let interested people know where this project is at. This is also a good place to link to the [CHANGELOG](CHANGELOG.md)._
-  - **Links to production or demo instances**
-  - _Describe what sets this apart from related-projects. Linking to another doc or page is OK if this can't be expressed in a sentence or two._
-
-
-**Screenshot**: If the software has visual components, place a screenshot after the description; e.g.,
-
-![](https://raw.githubusercontent.com/NOAA-OWP/owp-open-source-project-template/master/doc/Screenshot.png)
-
-
-## Dependencies
-
-Describe any dependencies that must be installed for this software to work.
-This includes programming languages, databases or other storage mechanisms, build tools, frameworks, and so forth.
-If specific versions of other software are required, or known not to work, call that out.
-
-## Installation
-
-Detailed instructions on how to install, configure, and get the project running.
-This should be frequently tested to ensure reliability. Alternatively, link to
-a separate [INSTALL](INSTALL.md) document.
 
 ## Configuration
 
@@ -94,23 +73,30 @@ If the software is configurable, describe it in detail, either here or in other 
 
 ## Usage
 
-Show users how to use the software.
-Be specific.
-Use appropriate formatting when showing code snippets.
+### raw metrics dataset processing
+  ```
+  cd /path/to/scripts/eval_metrics/name_of_dataset_here/
+  python proc_name_of_dataset_here_metrics.py "name_of dataset_here_schema.yaml"
+  ```
 
 ## How to test the software
 
-If the software includes automated tests, detail how to run those tests.
+You may also run unit tests on `fsds_proc`:
+```
+> cd /path/to/formulation-selection/pkg/fsds_proc/fsds_proc/tests
+> python -m unittest test_proc_eval_metrics.py
+```
+To assess code coverage:
+```
+python -m coverage run -m unittest
+python -m coverage report
+```
 
 ## Known issues
 
 Document any known significant shortcomings with the software.
 
 ## Getting help
-
-Instruct users how to get help with this software; this might include links to an issue tracker, wiki, mailing list, etc.
-
-**Example**
 
 If you have questions, concerns, bug reports, etc, please file an issue in this repository's Issue Tracker.
 

@@ -33,7 +33,7 @@ print(parent_dir_test)
 schema_dir_test = Path(parent_dir_test/Path("user_data_schema.yaml"))
 
 # Load the user-specific metrics dataset
-test_df = pd.read_csv(Path(parent_dir_test/Path("user_metric_data1.csv")))
+test_df = pd.read_csv(Path(parent_dir_test/Path("user_metric_data.csv")))
 
 # Load the YAML configuration file
 with open(schema_dir_test, 'r') as file:

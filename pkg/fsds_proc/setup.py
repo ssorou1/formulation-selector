@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 # > pip install -e ./
 setup(
     include_package_data = True,
-    #package_data = {'fsds_proc' : ['data/*.yaml']},
+    package_data = {'' : ['/data/*.yaml']},
     name="fsds_proc",
     version="0.1.3",
     author="Guy Litt",

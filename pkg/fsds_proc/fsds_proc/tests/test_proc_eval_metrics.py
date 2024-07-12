@@ -33,7 +33,7 @@ print(parent_dir_test)
 schema_dir_test = Path(parent_dir_test/Path("user_data_schema.yaml"))
 
 # Load the user-specific metrics dataset
-test_df = pd.read_csv(Path(parent_dir_test/Path("user_metric_data.csv")))
+test_df = pd.read_csv(Path(parent_dir_test/Path("user_metric_data1.csv")))
 
 # Load the YAML configuration file
 with open(schema_dir_test, 'r') as file:
@@ -78,7 +78,7 @@ class TestProcColSchema(unittest.TestCase):
         self.assertTrue(Path(dir_save/Path('user_data_std/juliemai-xSSA/eval/metrics/juliemai-xSSA_Raven_blended.csv')).resolve().is_file())
 
     def test_dataset_vars(self):
-        self.assertEqual(list(self.ds.keys()),['basin_name','nse','rmse','kge'])
+        self.assertEqual(list(self.ds.keys()),['basin_name','NSE','RMSE','KGE'])
 
 class TestProcColSchemaHier(unittest.TestCase):
     global test_df

@@ -1,9 +1,19 @@
 ## Installation
 
+### TLDR
+ - Install `proc_fsds` package
+   `pip install /path/to/pkg/proc_fsds/proc_fsds/.`
+ - Build a yaml config file `/sripts/eval_metrics/name_of_dataset_here/name_of_dataset_schema.yaml` (refer to this template)[https://github.com/glitt13/fsds/blob/std_catg/scripts/eval_ingest/xssa/xssa_schema.yaml)
+ - Create a script that reads in the data and runs the standardization processing. [Example script here](https://github.com/glitt13/fsds/blob/std_catg/scripts/eval_ingest/xssa/proc_xssa_metrics.py)
+ - Then run the following:
+  ```
+  cd /path/to/scripts/eval_metrics/name_of_dataset_here/
+  python proc_name_of_dataset_here_metrics.py "name_of dataset_here_schema.yaml"
+  ```
 
 ### 1. Install the `fsds_proc` package, which standardizes raw input data into a common format.
 ```
-> cd /path/to/proc_fsds/proc_fsds
+> cd /path/to/pkg/proc_fsds/proc_fsds
 > pip install .
 ```
 You may also run unit tests on `fsds_proc`:
@@ -36,6 +46,12 @@ The script that converts the raw data into the desired format. This performs the
  - Ingest the raw data (standardized)
  - Modify the raw data to become wide-format where columns consist of the gage id and separate columns for each formulation evaluation metric (user-developed munging)
  - Call the `fsds_proc.proc_col_schema()` to standardize the dataset into a common format (standardized function call)
+
+#### 3. Run the new script
+  ```
+  cd /path/to/scripts/eval_metrics/name_of_dataset_here/
+  python proc_name_of_dataset_here_metrics.py "name_of dataset_here_schema.yaml"
+  ```
 
 ----
 

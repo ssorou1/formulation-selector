@@ -162,12 +162,20 @@ def _proc_check_std_fsds_ids(vars: list, category=['metric','target_var'][0]):
     """
     Run check to ensure that variables are listed in the standardized fsds_categories.yaml
 
-    :param vars: user-defined variable listing. 
+    :param vars: user-defined variable listing of the anticipated mapped variables (e.g. ['NSE','RMSE'])
     :type vars: list
-    :param category: choose the category of 'metric' or 'target_var'. Defaults to 'metric'
+    :param category: choose the category of 'metric' or 'target_var' desired from the fsds standardized categories file. Defaults to 'metric'
     :type category: list, optional
     :raises ValueError: If at least one of the provided vars is not standard, raises error. 
     """
+
+    # perform check on input data and convert to list if needed:
+    if isinstance(vars,str):
+        vars = [vars]
+        
+    if isinstance(category,list) and len(category)>1:
+        raise ValueError(f'Expect {category} to be a single value, not list')
+
     # Read in the standardized names
     std_config = _read_std_config()
     df_std_config = _conv_ls_dicts_df_long(std_config )
@@ -182,7 +190,7 @@ def _proc_check_std_fsds_ids(vars: list, category=['metric','target_var'][0]):
         allowable_vars = ",".join(sub_std_config['var'])
         raise ValueError(f'The following {category} mappings defined in the dataset schema do not correspond to the standardized {category} names: \n {", ".join(bad_vars)} \n Allowable variables include: {allowable_vars}')
     else:
-        print('The {category} mappings from the dataset schema match expected format.')
+        print(f'The {category} mappings from the dataset schema match expected format.')
 
 
 def _proc_check_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.DataFrame:

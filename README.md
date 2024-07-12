@@ -1,30 +1,48 @@
-#### OWP Open Source Project Template Instructions
-
-1. _Create a new project._
-2. _[Copy these files into the new project](#installation)_
-3. _Update the README, replacing the contents below as prescribed._
-4. _Add any libraries, assets, or hard dependencies whose source code will be included
-   in the project's repository to the _Exceptions_ section in the [TERMS](TERMS.md)._
-  - _If no exceptions are needed, remove that section from TERMS._
-5. _If working with an existing code base, answer the questions on the [open source checklist](opensource-checklist.md)_
-6. _Delete these instructions and everything up to the _Project Title_ from the README._
-7. _Write some great software and tell people about it._
-
-> Keep the README fresh! It's the first thing people see and will make the initial impression.
-
 ## Installation
 
-_To install all of the template files, run the following script from the root of your project's directory:_
 
+### 1. Install the `fsds_proc` package, which standardizes raw input data into a common format.
 ```
-bash -c "$(curl -s https://raw.githubusercontent.com/NOAA-OWP/owp-open-source-project-template/open_source_template.sh)"
+> cd /path/to/proc_fsds/proc_fsds
+> pip install .
 ```
+You may also run unit tests on `fsds_proc`:
+```
+> cd ./tests
+> python -m unittest test_procz_eval_metrics.py
+```
+To assess code coverage:
+```
+python -m coverage run -m unittest
+python -m coverage report
+```
+### 2. Build a custom model metrics data ingest
+Ingesting raw data describing model metrics (e.g. KGE, NSE) from modeling simulations requires two tasks:
+   1. Creating a custom configuration schema as a .yaml file
+   2. Modify a dataset ingest script
+
+We track these tasks inside `formulation-selector/scripts/eval_ingest/_name_of_raw_dataset_here_/`
+#### 1. `data_schema.yaml`
+The data schema yaml file contains the following fields:
+ - `col_schema`:  required column mappings in the evaluation metrics dataset. These describe the column names in the raw data and how they'll map to standardized column names. 
+    - for `metric_mappings` refer to the the [fsds_categories.yaml](https://github.com/glitt13/fsds/blob/std_catg/pkg/fsds_proc/fsds_proc/data/fsds_categories.yaml) 
+ - `file_io`: The location of the input data and desired save location. Also specifies the save file format.
+ - `formulation_metadata`: Descriptive traits of the model formulation that generated the metrics. Some of these are required fields while others are optional.
+ - `references`: Optional but _very_ helplful metadata describing where the data came from.
+
+#### 2. `proc_data_metrics.py`
+The script that converts the raw data into the desired format. This performs the following tasks:
+ - Read in the data schema yaml file (standardized)
+ - Ingest the raw data (standardized)
+ - Modify the raw data to become wide-format where columns consist of the gage id and separate columns for each formulation evaluation metric (user-developed munging)
+ - Call the `fsds_proc.proc_col_schema()` to standardize the dataset into a common format (standardized function call)
 
 ----
 
 # Formulation Selection Decision Support (FSDS)
 
-**Description**:  The private repo development of the FSDS tooling. This will eventually migrate to the official formulation-selection OWP repo.
+**Description**:  T
+The formulation-selection decision support tool (FSDS) is under development.
 
 As NOAA OWP builds the model-agnostic NextGen framework, the hydrologic modeling community will need to know how to optimally select model formulations and estimate parameter values across ungauged catchments. This problem becomes intractable when considering the unique combinations of current and future model formulations combined with the innumerable possible parameter combinations across the continent. To simplify the model selection problem, we apply an analytical tool that predicts hydrologic formulation performance (Bolotin et al., 2022, Liu et al., 2022) using community-generated data. The formulation selection decision support (FSDS) tool readily predicts how models might perform across catchments based on catchment attributes. This decision support tool is designed such that as the hydrologic modeling community generates more results, better decisions can be made on where formulations would be best suited. Here we present the baseline results on formulation selection and demonstrate how the hydrologic modeling community may participate in improving and/or using this tool.
 

@@ -12,16 +12,14 @@ import argparse
 import pandas as pd
 from pathlib import Path
 import yaml
-from pkg.fsds_proc.fsds_proc.proc_eval_metrics import read_schm_ls_of_dict, proc_col_schema
-path_config = '/Users/laurenbolotin/Lauren/FSDS/fsds/scripts/eval_ingest/SI/SI_lm_schema.yaml'
+from fsds_proc.proc_eval_metrics import read_schm_ls_of_dict, proc_col_schema
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process the YAML config file.')
     parser.add_argument('path_config', type=str, help='Path to the YAML configuration file')
     args = parser.parse_args()
     # The path to the configuration
-    path_config = '/Users/laurenbolotin/Lauren/FSDS/fsds/scripts/eval_ingest/SI/SI_lm_schema.yaml'
-    # path_config = args.path_config # '/Users/laurenbolotin/Lauren/FSDS/fsds/scripts/eval_ingest/SI/SI_lm_schema.yaml' 
+    path_config = args.path_config # '/Users/laurenbolotin/Lauren/FSDS/fsds/scripts/eval_ingest/SI/SI_lm_schema.yaml' 
 
     if not Path(path_config).exists():
         raise ValueError("The provided path to the configuration file does not exist: {path_config}")

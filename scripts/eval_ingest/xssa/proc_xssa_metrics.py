@@ -58,5 +58,5 @@ if __name__ == "__main__":
     # END CUSTOMIZED DATASET MUNGING
 
     # ------ Extract metric data and write to file
-    print(f"Standardizing datasets and writing to {dir_save}")
+    
     ds = proc_col_schema(df, col_schema_df, dir_save)

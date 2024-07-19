@@ -1,64 +1,58 @@
-import os.path
 
-# from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-# from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+import os.path
+from pathlib import Path
+
 
 from pydrive2.drive import GoogleDrive
 from pydrive2.auth import GoogleAuth
+import warnings
 import tempfile
 
-#%% googleapi approach
-# If modifying these scopes, delete the file token.json.
-SCOPES = ["https://www.googleapis.com/auth/drive.metadata.readonly"]
-
-path_to_token = '/Users/guylitt/git/fsds/scripts/config/token.json'
-
-if os.path.exists(path_to_token):
-    creds = Credentials.from_authorized_user_file(path_to_token, SCOPES)
-
-try:
-    service = build("drive", "v3", credentials=creds)
-
-    # Call the Drive v3 API
-    results = (
-        service.files()
-        .list(pageSize=3, fields="nextPageToken, files(id, name)")
-        .execute()
-    )
-    items = results.get("files", [])
-
-    if not items:
-        print("No files found.")
-        #return
-    print("Files:")
-    for item in items: 
-        print(f"{item['name']} ({item['id']})")
-except HttpError as error:
-    # TODO(developer) - Handle errors from drive API.
-    print(f"An error occurred: {error}")
 
 #%% The pydrive approach
 
-# Requirement for GoogleAuth(): Change to the path where client_secrets.json lives!!
-os.chdir(os.path.dirname(path_to_token)) 
-gauth = GoogleAuth()
-gauth.LocalWebserverAuth()
-#gauth.LoadCredentialsFile("/Users/guylitt/git/fsds/scripts/config/creds.json")#LoadClientConfig()#LoadClientConfigFile(path_to_token)#.LoadCredentialsFile(path_to_token)
-drive = GoogleDrive(gauth)
 
+# TODO add config file
+# Define the home dir
+local_save_home_dir = ['temp','home_dir'][1]
+if local_save_home_dir == 'temp':
+    home_dir = str(tempfile.TemporaryDirectory())
+elif local_save_home_dir == 'home_dir':
+    home_dir = str(Path.home())
+else:
+    home_dir = local_save_home_dir
 
-# TODO add option for temp or user-specified.
-home_dir = tempfile.TemporaryDirectory()
-dir_save= f'{home_dir}/noaa/regionalization/data/input'
+# The path containing client secrets
+folder_with_client_secrets = f'{home_dir}/git/fsds/scripts/config/'
 
-os.makedirs(dir_save, exist_ok = True)
+# The base dir for saving in google drive:
+base_path_save_gdrive = "RegionalizationCollab/FSDS/temp_data/input/user_data_std/"
+dir_save= f'{home_dir}/noaa/regionalization/data/input'# local save dir
+
 
 # TODO acquire this from yaml config
 path_data = f'{home_dir}/noaa/regionalization/data/julemai-xSSA/data_in/basin_metadata/basin_validation_results.txt'
 name_data = os.path.basename(path_data)
+
+# end config file input
+#%% 
+os.makedirs(dir_save, exist_ok = True)
+
+def gdrive_auth_client_secrets(folder_with_client_secrets: str) -> pydrive2.drive.GoogleDrive:
+    if any(x in folder_with_client_secrets for x in ['git','fsds','formulation-selector']):
+        warnings.warn("Damn well be sure that all secrets files are in .gitignore if you're storing secrets in a git folder")
+    
+    if len( [x for x in Path(folder_with_client_secrets).glob('client_secrets.json')]) == 0:
+        raise ValueError("User must manually save")
+
+    # Requirement for GoogleAuth(): Change to the path where client_secrets.json lives!!
+    os.chdir(folder_with_client_secrets)
+
+    gauth = GoogleAuth()
+    gauth.LocalWebserverAuth()
+    drive = GoogleDrive(gauth)
+    return drive
+
 #%% pydrive download
 # Identify file(s) of interest 
 query = {'q': f"title = '{name_data}'"}
@@ -75,11 +69,18 @@ for file_list in drive.ListFile(query):
       print(f'Wrote file to: {path_save_file}')
 
 #%% List subdirectories of interest
+def _gdrive_lssubf(parent_folder_id: str, titles_to_match:list, indent=0) -> list:
+    """ Generate list of google drive subfolder metadata corresponding to existing subfolder hierarchy
 
-
-titles_to_match = "RegionalizationCollab/FSDS/temp_data/input/user_data_std/".split('/')
-
-def list_and_match_subfolders(parent_folder_id, titles_to_match, indent=0):
+    :param parent_folder_id: the full filepath in google drive for existing subfolders
+    :type parent_folder_id: str
+    :param titles_to_match: An ordered list of subfolders in a google drive
+    :type titles_to_match: list of str
+    :param indent: _description_, defaults to 0
+    :type indent: int, optional
+    :return: list of pydrive2.files.GoogleDriveFile objects corresponding to each subfolder specifed in titles_to_match
+    :rtype: list
+    """
     query = f"'{parent_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
     folder_list = drive.ListFile({'q': query}).GetList()
     
@@ -89,22 +90,37 @@ def list_and_match_subfolders(parent_folder_id, titles_to_match, indent=0):
         if folder['title'] in titles_to_match:
             print(' ' * indent + f"Matched Title: {folder['title']}, ID: {folder['id']}")
             matches.append(folder)
+
         # Recursively list subfolders of the current folder and extend matches
-        matches.extend(list_and_match_subfolders(folder['id'], titles_to_match, indent + 4))
+        matches.extend(_gdrive_lssubf(folder['id'], titles_to_match, indent + 4))
     
     return matches
 
-parent_folder_id = 'root'  # Replace with your parent folder ID
-ls_id_all_sf = list_and_match_subfolders(parent_folder_id, titles_to_match)
+def wrap_gdrive_lssubf(gdrive_path: str, parent_folder_id = 'root') -> list:
+    """ Wrapper that returns list of google drive hierarchical subfolder metadata
 
-if ls_id_all_sf[-1]['title'] != titles_to_match[-1]:
-    raise ValueError(f"Could not find the final google drive folder '{titles_to_match[-1]}'. Only found up to '{ls_id_all_sf[-1]['title']}'")
+    :param gdrive_path: the path of 
+    :type gdrive_path: str
+    :param parent_folder_id: _description_, defaults to 'root'
+    :type parent_folder_id: str, optional
+    :raises warning: If the final subfolder's metadata does not match the requested final folder, then the full subfolder path doesn't exist in google drive
+    :return: list of pydrive2.files.GoogleDriveFile objects corresponding to each subfolder specifed in titles_to_match
+    :rtype: list
+    """
+    titles_to_match = gdrive_path.split('/')
+    ls_id_all_sf = _gdrive_lssubf(parent_folder_id, titles_to_match)
+    if ls_id_all_sf[-1]['title'] != titles_to_match[-1]:
+        warnings.warn(f"Could not find the final google drive folder '{titles_to_match[-1]}'. Only found up to '{ls_id_all_sf[-1]['title']}'. Try creating the subfolder of interest")
+    return ls_id_all_sf
+
+
+ls_id_all_sf = wrap_gdrive_lssubf(base_path_save_gdrive)
 
 
 #%% pydrive upload
 
-# TODO create a folder: https://developers.google.com/drive/api/guides/folder#create_a_folder
-# Create folder.
+# create a folder: https://developers.google.com/drive/api/guides/folder#create_a_folder
+
 folder_metadata = {
     "title": "RegionalizationCollab/FSDS/temp_data/input/user_data_std/test_folder_pydrive2",
     # The mimetype defines this new file as a folder, so don't change this.
@@ -113,6 +129,51 @@ folder_metadata = {
 folder = drive.CreateFile(folder_metadata)
 folder.Upload()
 
+def wrap_gdrive_create_subf(parent_folder_id, folder_name):
+    folder_metadata = {
+        'title': folder_name,
+        'parents': [{'id': parent_folder_id}],
+        'mimeType': 'application/vnd.google-apps.folder'
+    }
+    folder = drive.CreateFile(folder_metadata)
+    folder.Upload()
+    return folder
+
+# TODO only create subfolders of those that are needed:
+base_path_save = base_path_save_gdrive # This should already exist as a path in google drive
+path_data = Path(Path(base_path_save_gdrive)/Path("testit/testitagain"))
+def wrap_gdrive_create_subf(base_path_save: str, path_data: str, ls_id_all_sf=None):
+    """Create new hierarchical subfolders within existing google drive directories
+
+    :param base_path_save: existing google drive directory
+    :type base_path_save: str
+    :param path_data: new google drive directory to be created
+    :type path_data: str
+    :param ls_id_all_sf: Optional list of google drive metadata for each subfolder as generated by wrap_gdrive_lssubf, defaults to None to simply generate this list
+    :type ls_id_all_sf: list, optional
+    """
+    ls_subf_to_create = str(path_data).replace(str(base_path_save),'').split('/')
+
+    if not ls_id_all_sf:
+        # Get the existing ids by querying the existing google drive paths
+        ls_id_all_sf = wrap_gdrive_lssubf(base_path_save)
+    # Create the new subfolder(s)
+    ctr = 0
+    for subf in ls_subf_to_create:
+        if ctr == 0:
+            parent_folder_id = ls_id_all_sf[-1]['id']
+        new_folder = wrap_gdrive_create_subf(parent_folder_id,folder_name = subf)
+        ctr += 1
+        parent_folder_id = new_folder['id'] 
+
+
+
+# Step 3: Specify the parent folder ID and subfolder name
+parent_folder_id = 'your_parent_folder_id'  # Replace with the ID of the parent folder
+subfolder_name = 'New Subfolder'  # Replace with the name of the subfolder you want to create
+
+# Step 4: Create the subfolder within the parent folder
+new_subfolder = create_subfolder(parent_folder_id, subfolder_name)
 
 
 # TODO upload file
@@ -206,30 +267,9 @@ def get_files(folder_path=None,gdrive = None, target_ids=None, files=[]):
 file_list = get_files('RegionalizationCollab/FSDS/temp_data/input/user_data_std/',drive)
 
 
-for f in file_list:
-    print(f)
 
 
 
-
-# %% 
-# https://stackoverflow.com/questions/34101427/accessing-folders-subfolders-and-subfiles-using-pydrive-python
-
-
-def 
-
-
-top_list = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
-for file in top_list:
-    if  file['title'] == 'RegionalizationCollab' :
-        print('title: %s, id: %s' % (file['title'], file['id']))
-
-        drive.ListFile({})
-#Paginate file lists by specifying number of max results
-for file_list in drive.ListFile({'q': 'trashed=true', 'maxResults': 100}):
-    print('Received %s files from Files.list()' % len(file_list)) # <= 10
-    for file1 in file_list:
-        print('title: %s, id: %s' % (file1['title'], file1['id']))
 
 #%%
 # Step 2: Function to recursively list subfolders
@@ -256,26 +296,3 @@ ls_dir_struct = "RegionalizationCollab/FSDS/temp_data/input/user_data_std/test_f
 print("Subfolders listed successfully.")
 
 #%%
-
-# List of titles to match
-titles_to_match = ['Title1', 'Title2', 'Title3']  # Replace with your list of titles
-
-# Step 2: Function to recursively list subfolders and check for matches
-def list_and_match_subfolders(parent_folder_id, titles_to_match, indent=0):
-    query = f"'{parent_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
-    folder_list = drive.ListFile({'q': query}).GetList()
-
-    for folder in folder_list:
-        if folder['title'] in titles_to_match:
-            print(' ' * indent + f"Matched Title: {folder['title']}, ID: {folder['id']}")
-        else:
-            print(' ' * indent + f"Title: {folder['title']}, ID: {folder['id']}")
-        # Recursively list subfolders of the current folder
-        list_and_match_subfolders(folder['id'], titles_to_match, indent + 4)
-
-# Step 3: Specify the parent folder ID and list subfolders
-parent_folder_id = 'your_parent_folder_id'  # Replace with your parent folder ID
-list_and_match_subfolders(parent_folder_id, titles_to_match)
-
-print("Subfolders listed successfully.")
-Steps Explained:

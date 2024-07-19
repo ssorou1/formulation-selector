@@ -13,6 +13,7 @@ _site/
 credentials.json
 token.json
 client_secrets.json
+creds.json
 
 # Packages #
 ############

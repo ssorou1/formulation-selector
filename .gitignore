@@ -49,6 +49,7 @@ __pycache__/
 *.py[cod]
 .env
 .python-version
+.venv
 
 build/
 develop-eggs/

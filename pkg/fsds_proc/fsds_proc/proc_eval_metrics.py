@@ -193,15 +193,20 @@ def _proc_check_std_fsds_ids(vars: list, category=['metric','target_var'][0]):
         print(f'The {category} mappings from the dataset schema match expected format.')
 
 
-def _proc_check_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.DataFrame:
+def _proc_check_input_df(df: pd.DataFrame, 
+                         col_schema_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Checks the input dataset for consistency in expected column format as generated from the yaml config file.
+    Checks the input dataset for consistency in expected column format as 
+        generated from the yaml config file.
 
-    :param df: The dataset of interest containing at a minimum catchment ID and evaluation metrics
+    :param df: The dataset of interest containing at a minimum catchment ID 
+        and evaluation metrics
     :type df: pd.DataFrame
-    :param col_schema_df: The column schema naming convention ingested from the yaml file corresponding to the dataset.
+    :param col_schema_df: The column schema naming convention ingested from 
+        the yaml file corresponding to the dataset.
     :type col_schema_df: pd.DataFrame
-    :return: wide format df ensuring that the unique identifier for each row is 'gage_id'
+    :return: wide format df ensuring that the unique identifier for 
+        each row is 'gage_id'
     :rtype: pd.DataFrame
 
     note::
@@ -211,22 +216,30 @@ def _proc_check_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.Da
     """
 
 
-    gage_id = col_schema_df['gage_id'].iloc[0]
-    metric_cols = col_schema_df['metric_cols'].iloc[0]
+    gage_id = col_schema_df.loc[0, 'gage_id']
+    metric_cols = col_schema_df.loc[0, 'metric_cols']
     metrics = metric_cols.split('|')
 
     if df.columns.str.contains(metric_cols).sum() != len(metrics):
 
-        warnings.warn(f'Not all metric columns {", ".join(metrics)} are inside df columns. Revise the config file or ensure the input data is in appropriate format (i.e. wide format for each variable)')
+        warnings.warn(f'Not all metric columns {", ".join(metrics)} are'
+                      ' inside df columns. Revise the config file or ensure'
+                       ' the input data is in appropriate format'
+                        ' (i.e. wide format for each variable)')
  
     if not df.index.name == 'gage_id':
         # Change the name to gage_id   
         df.rename(columns = {gage_id : 'gage_id'},inplace=True)
         if not any(df.columns.str.contains('gage_id')):
-            warnings.warn(f'Expecting one df column to be named: {gage_id} - per the config file. Inspect config file and/or dataframe col names')
+            warnings.warn(f'Expecting one df column to be named: {gage_id}'
+                          ' - per the config file. Inspect config file'
+                          ' and/or dataframe col names')
         # Set gage_id as the index
         if any(df['gage_id'].duplicated()):
-            warnings.warn('Expect only one gage_id for each row in the data. Convert df to wide format when passing to proc_col_schema(). This could create problems if writing standardized data in hierarchical format.')
+            warnings.warn('Expect only one gage_id for each row in the data.'
+                          ' Convert df to wide format when passing to'
+                          ' proc_col_schema(). This could create problems'
+                           ' if writing standardized data in hierarchical format.')
         else: # We can set the index as 'gage_id'
             df.set_index('gage_id', inplace=True)
 
@@ -242,15 +255,21 @@ def _proc_check_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.Da
 
     return df
 
-def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str | os.PathLike) -> xr.Dataset:
+def proc_col_schema(df: pd.DataFrame, 
+                    col_schema_df: pd.DataFrame, 
+                    dir_save: str | os.PathLike) -> xr.Dataset:
     """
-    Process model evaluation metrics into individual standardized files and save a standardized metadata file.
+    Process model evaluation metrics into individual standardized files 
+        and save a standardized metadata file.
 
-    :param df: pd.DataFrame type. The dataset of interest containing at a minimum catchment ID and evaluation metrics
+    :param df: pd.DataFrame type. The dataset of interest containing at a 
+        minimum catchment ID and evaluation metrics
     :type df: pd.DataFrame
-    :param col_schema_df: The column schema naming convention ingested from the yaml file corresponding to the dataset. C
+    :param col_schema_df: The column schema naming convention ingested from 
+        the yaml file corresponding to the dataset. C
     :type col_schema_df: pd.DataFrame
-    :param dir_save: Path for saving the standardized metric data file(s) and the metadata file.
+    :param dir_save: Path for saving the standardized metric data file(s)
+        and the metadata file.
     :type dir_save: str | os.PathLike
     :raises ValueError: _description_
     :return: _description_
@@ -264,14 +283,27 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
     """
     print(f"Standardizing datasets and writing to {dir_save}")
     # Based on the standardized column schema naming conventions
-    dataset_name =  col_schema_df['dataset_name'].iloc[0]
-    formulation_id =  col_schema_df['formulation_id'].iloc[0]
-    formulation_base =  col_schema_df['formulation_base'].iloc[0]
-    save_type = col_schema_df['save_type'].iloc[0]
-    save_loc = col_schema_df['save_loc'].iloc[0]
+    dataset_name =  col_schema_df.loc[0, 'dataset_name']
+    formulation_id =  col_schema_df.loc[0, 'formulation_id']
+    formulation_base =  col_schema_df.loc[0, 'formulation_base']
+    save_type = col_schema_df.loc[0, 'save_type']
+    save_loc = col_schema_df.loc[0, 'save_loc']
     if formulation_id == None:
         # Create formulation_id as a combination of formulation_base and other elements
-        formulation_id = '_'.join(list(filter(None,[formulation_base, '_v',col_schema_df['formulation_ver'].iloc[0],'_',col_schema_df['dataset_name']]))) 
+        formulation_id = '_'.join(
+            list(
+                filter(
+                    None,
+                    [
+                        formulation_base,
+                        '_v',
+                        col_schema_df.loc[0, 'formulation_ver'], 
+                        '_',
+                        col_schema_df['dataset_name']
+                    ]
+                )
+            )
+        ) 
     
     # Create the unique filename corresponding to a dataset & formulation
     uniq_filename = f'{dataset_name}_{formulation_id}'
@@ -279,7 +311,11 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
     # TODO add cloud or local saving
     if save_loc == 'local':
          # Optionally creates dir structure  if save_type == 'csv' or 'parquet'
-        _save_dir_base, _other_save_dirs = _save_dir_struct(dir_save, dataset_name, save_type)
+        _save_dir_base, _other_save_dirs = _save_dir_struct(
+                                                        dir_save, 
+                                                        dataset_name, 
+                                                        save_type
+                                                        )
     elif save_loc == 'aws':
         print("TODO ensure connect credentials here")
         # TODO define _save_dir_base here in case .csv are desired in cloud
@@ -291,21 +327,28 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
     ds = df.to_xarray()
     ds.attrs = col_schema_df.fillna('').to_dict('index')[0]
     
-    # TODO query a database for the lat/lon corresponding to the gage-id if lat/lon not already provided
+    # TODO query a database for the lat/lon corresponding to the gage-id if 
+    # lat/lon not already provided
 
     # Save the standardized dataset
     if save_type == 'csv' or save_type == 'parquet':
         if len(_other_save_dirs) == 0:
-            raise ValueError('Expected _save_dir_struct to generate values in _other_save_dirs')
+            raise ValueError(
+                'Expected _save_dir_struct to generate values in _other_save_dirs'
+                )
 
         # TODO allow output write to a variety of locations (e.g. local/cloud)
         # Write data in long format
-        save_path_eval_metr = Path(_other_save_dirs['eval_metr'] / f'{uniq_filename}.csv') 
+        save_path_eval_metr = Path(
+            _other_save_dirs['eval_metr'] / f'{uniq_filename}.csv'
+            )
+             
         if save_type == 'csv':
             df.to_csv(save_path_eval_metr)
         else:
             df.to_parquet(Path(str(save_path_eval_metr).replace('.csv','.parquet')))
-        # Write metadata table corresponding to these metric data table(s) (e.g. startDate, endDate)
+        # Write metadata table corresponding to these metric data table(s) 
+        # (e.g. startDate, endDate)
         save_path_meta = Path(_other_save_dirs['meta'] / f'{uniq_filename}_metadata.csv')
         if save_type == 'csv':
             col_schema_df.to_csv(save_path_meta)
@@ -319,7 +362,8 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
     elif save_type == 'zarr':
         save_path_zarr = Path(_save_dir_base/Path(f'{uniq_filename}_zarr'))
         if os.path.exists(save_path_zarr):
-            shutil.rmtree(save_path_zarr) # Delete any pre-existing zarr data in the same directory
+            shutil.rmtree(save_path_zarr) # Delete any pre-existing zarr data with the same name
+                                            # (BChoat-THIS MAY BE RISKY)
         ds.to_zarr(save_path_zarr)   # Re-write to directory
         print(f"Saved zarr files inside {save_path_zarr}")
     return ds # Returning not intended use case, but it's an option

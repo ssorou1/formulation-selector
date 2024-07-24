@@ -6,6 +6,16 @@
 \usage{
 proc_attr_wrap(comid, Retr_Params, lyrs = "network", overwrite = FALSE)
 }
+\arguments{
+\item{comid}{character. The common identifier USGS location code for a surface water feature.}
+
+\item{Retr_Params}{list. List of list structure with parameters/paths needed to acquire variables of interest}
+
+\item{lyrs}{character. The layer names of interest from the hydrofabric gpkg. Default 'network'}
+
+\item{overwrite}{boolean. Should the hydrofabric cloud data acquisition be redone and overwrite any local files? Default FALSE.}
+}
 \description{
-Wrapper to retrieve variables when processing attributes
+Identifies a comid location using the hydrofabric and then
+processes user-requested variables from multiple sources
 }

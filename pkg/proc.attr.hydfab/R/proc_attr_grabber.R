@@ -34,10 +34,10 @@ proc_attr_hydatl <- function(hf_id, s3_path, ha_vars, local_path=NA){
   #' @export
   # Reads in hydroatlas variables https://data.hydrosheds.org/file/technical-documentation/HydroATLAS_TechDoc_v10_1.pdf
 
-  if(!is.numeric(hf_id)){
-    warning(paste0("The hf_id ", hf_id, " expected to be numeric. Converting"))
-    hf_id <- as.numeric(hf_id)
-  }
+  # if(!is.numeric(hf_id)){
+  #   warning(paste0("The hf_id ", hf_id, " expected to be numeric. Converting"))
+  #   hf_id <- as.numeric(hf_id)
+  # }
 
   # TODO check for local hydroatlas dataset before proceeding with s3 connection
   if(!base::is.na(local_path)){
@@ -99,7 +99,7 @@ proc_attr_hf <- function(comid, dir_hydfab,custom_name="{lyrs}_",ext = 'gpkg',
   #' @export
 
   # Build the hydfab filepath
-  name_file <- proc.attr.hydfab::proc_std_hfsub_name(comid=comid,
+  name_file <- proc.attr.hydfab::proc_attr_std_hfsub_name(comid=comid,
                                    custom_name=glue::glue('{lyrs}_'),
                                    ext=ext)
   fp_cat <- base::file.path(dir_hydfab, name_file)
@@ -143,8 +143,13 @@ proc_attr_hf <- function(comid, dir_hydfab,custom_name="{lyrs}_",ext = 'gpkg',
 # TODO make attr_sources a structured list of lists following a standard format
 proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
   #' @title Wrapper to retrieve variables when processing attributes
-
-
+  #' @description Identifies a comid location using the hydrofabric and then
+  #' processes user-requested variables from multiple sources
+  #' @param comid character. The common identifier USGS location code for a surface water feature.
+  #' @param Retr_Params list. List of list structure with parameters/paths needed to acquire variables of interest
+  #' @param lyrs character. The layer names of interest from the hydrofabric gpkg. Default 'network'
+  #' @param overwrite boolean. Should the hydrofabric cloud data acquisition be redone and overwrite any local files? Default FALSE.
+  #' @export
   net <- proc.attr.hydfab::proc_attr_hf(comid=comid,dir_hydfab=Retr_Params$paths$dir_hydfab,
                       custom_name = "{lyrs}_",lyrs=lyrs,overwrite=FALSE)
 

@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument('path_config', type=str, help='Path to the YAML configuration file')
     args = parser.parse_args()
     # The path to the configuration
-    path_config = './ngenBEC_CFEx_schema.yaml' # args.path_config 
+    path_config = './ngenBEC_TOPMODEL_schema.yaml' # args.path_config 
 
 
     if not Path(path_config).exists():
@@ -52,19 +52,14 @@ if __name__ == "__main__":
         dtype={col_schema_df.loc[0, 'gage_id']: str}
     )
 
+    form_work = col_schema_df.loc[0, 'formulation_base']
+
+    df = df_all_data.query("Model_RR == @form_work")
+
     # -----------------------------
     # END CUSTOMIZED DATASET MUNGING
 
     # ------ Extract metric data and write to file
     print(f"Standardizing datasets and writing to {dir_save}")
 
-
-    if '|' in col_schema_df.loc[0, 'formulation_base']:
-        for frm in col_schema_df.loc[0, 'formulation_base'].split('|'):
-            df = df_all_data.query("Model_RR == @frm")
-
-            col_schema_temp 
-
-            ds = proc_col_schema(df, col_schema_df, dir_save)
-    else:
-        ds = proc_col_schema(df, col_schema_df, dir_save)
+    ds = proc_col_schema(df, col_schema_df, dir_save)

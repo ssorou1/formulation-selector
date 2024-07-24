@@ -66,13 +66,20 @@ def _conv_ls_dicts_df_long(config: dict):
     return dft
 
 
-def _proc_check_input_config(config: dict, std_keys=['file_io','col_schema','formulation_metadata','references'],
-                             req_col_schema=['gage_id', 'metric_cols'],
-                             req_form_meta=['dataset_name','formulation_base','target_var','start_date', 'end_date','cal_status'],
-                             req_file_io=['dir_save', 'save_type','save_loc']):
+def _proc_check_input_config(
+    config: dict, 
+    std_keys=['file_io','col_schema','formulation_metadata','references'],
+    req_col_schema=['gage_id', 'metric_cols'],
+    req_form_meta=[
+        'dataset_name','formulation_base','target_var','start_date', 
+        'end_date','cal_status'
+        ],
+    req_file_io=['dir_save', 'save_type','save_loc']
+    ):
     
     """
-    Check input config file to ensure it contains the minimum expected categories
+    Check input config file to ensure it contains the minimum expected 
+        categories
 
     :raises ValueError: _description_
     :raises ValueError: _description_
@@ -86,7 +93,9 @@ def _proc_check_input_config(config: dict, std_keys=['file_io','col_schema','for
     # Expected standard keys:
     chck_dict = {key: config[key] for key in std_keys}
     if len(chck_dict) != len(std_keys):
-        raise ValueError(f"The provided keys in the input config file should include the following: {', '.join(std_keys)}")
+        raise ValueError("The provided keys in the input config file"
+                        " should include the following:"
+                        f" {', '.join(std_keys)}")
     
     # required keys defined inside col_schema
     keys_col_schema = _proc_flatten_ls_of_dict_keys(config, 'col_schema')
@@ -220,11 +229,21 @@ def _proc_check_input_df(df: pd.DataFrame,
     metric_cols = col_schema_df.loc[0, 'metric_cols']
     metrics = metric_cols.split('|')
 
-    if df.columns.str.contains(metric_cols).sum() != len(metrics):
+    # check that all metric columns in schema file are in input dataframe
+    # extract column names holding metrics
+    metric_columns = metric_cols.split("|")
 
-        warnings.warn(f'Not all metric columns {", ".join(metrics)} are'
-                      ' inside df columns. Revise the config file or ensure'
-                       ' the input data is in appropriate format'
+    if df.columns.isin(metric_columns).sum() != len(metrics):
+
+        # get names of metrics not in df
+        missing_columns = [
+            col for col in metric_columns if col not in df.columns
+            ]
+
+        warnings.warn('\nThe following metric columns are not in your input'
+                      f' dataframe, df:\n    {", ".join(missing_columns)}\n'
+                      ' \nRevise the config file or ensure'
+                       ' the input data is in appropriate format\n'
                         ' (i.e. wide format for each variable)')
  
     if not df.index.name == 'gage_id':
@@ -288,6 +307,7 @@ def proc_col_schema(df: pd.DataFrame,
     formulation_base =  col_schema_df.loc[0, 'formulation_base']
     save_type = col_schema_df.loc[0, 'save_type']
     save_loc = col_schema_df.loc[0, 'save_loc']
+
     if formulation_id == None:
         # Create formulation_id as a combination of formulation_base and other elements
         formulation_id = '_'.join(

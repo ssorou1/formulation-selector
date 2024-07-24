@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument('path_config', type=str, help='Path to the YAML configuration file')
     args = parser.parse_args()
     # The path to the configuration
-    path_config = './ngenBEC_TOPMODEL_schema.yaml' # args.path_config 
+    path_config = args.path_config # './ngenBEC_TOPMODEL_schema.yaml' # 
 
 
     if not Path(path_config).exists():

@@ -100,17 +100,22 @@ def _proc_check_input_config(
     # required keys defined inside col_schema
     keys_col_schema = _proc_flatten_ls_of_dict_keys(config, 'col_schema')
     if not all([x in keys_col_schema for x in req_col_schema]):
-        raise ValueError(f"The input config file expects the following defined under 'col_schema': {', '.join(req_col_schema)}")
+        raise ValueError("The input config file expects the following"
+                        " defined under 'col_schema':"
+                        f" {', '.join(req_col_schema)}")
 
     # required keys defined in formulation_metadata
     keys_form_meta = _proc_flatten_ls_of_dict_keys(config, 'formulation_metadata')
     if not all([x in keys_form_meta for x in req_form_meta]):
-        raise ValueError(f"The input config file expects the following defined under 'formulation_metadata': {', '.join(req_form_meta)}")
+        raise ValueError("The input config file expects the following"
+                        " defined under 'formulation_metadata':"
+                        f" {', '.join(req_form_meta)}")
 
     # required keys defined in file_io
     keys_file_io = _proc_flatten_ls_of_dict_keys(config, 'file_io')
     if not all([x in keys_file_io for x in req_file_io]):
-        raise ValueError(f"The input config file expects the following defined under 'formulation_metadata': {', '.join(req_file_io)}")
+        raise ValueError(f"The input config file expects the following"
+                        f" defined under 'formulation_metadata': {', '.join(req_file_io)}")
 
 def read_schm_ls_of_dict(schema_path: str | os.PathLike) -> pd.DataFrame:
     """Read a dataset's schema file designed as a list of dicts
@@ -140,14 +145,17 @@ def read_schm_ls_of_dict(schema_path: str | os.PathLike) -> pd.DataFrame:
 
     return df_all
 
-def _save_dir_struct(dir_save: str | os.PathLike, dataset_name: str, save_type:str ) -> tuple[Path, dict]:
+def _save_dir_struct(dir_save: str | os.PathLike, 
+                        dataset_name: str, 
+                        save_type:str ) -> tuple[Path, dict]:
     # Create a standard directory saving structure (in cases of local filesaving)
     save_dir_base = Path(Path(dir_save) / Path('user_data_std') / dataset_name)
     save_dir_base.mkdir(exist_ok=True, parents = True)
 
     other_save_dirs = dict()
     if save_type == 'csv' or save_type == 'parquet': # For non-hierachical files
-        # Otherwise single hierarchical files will be saved in lieu of subdirectories populated w/ .csv files
+        # Otherwise single hierarchical files will be saved in lieu of
+        # subdirectories populated w/ .csv files
 
         # Design dir structure for writing multiple files
         save_dir_attr = Path(save_dir_base / Path('attributes'))
@@ -162,20 +170,28 @@ def _save_dir_struct(dir_save: str | os.PathLike, dataset_name: str, save_type:s
         save_dir_eval_ts.mkdir(exist_ok=True, parents = True)
         save_dir_meta_lic.mkdir(exist_ok=True, parents = True)
         save_dir_config.mkdir(exist_ok=True, parents = True)
-        other_save_dirs = {'attr': save_dir_attr, 'eval_metr': save_dir_eval_metr, 'eval_ts' : save_dir_eval_ts,
-                           'meta': save_dir_meta, 'meta_lic': save_dir_meta_lic, 'config': save_dir_meta}
+        other_save_dirs = {'attr': save_dir_attr, 
+                            'eval_metr': save_dir_eval_metr, 
+                            'eval_ts' : save_dir_eval_ts,
+                            'meta': save_dir_meta, 
+                            'meta_lic': save_dir_meta_lic, 
+                            'config': save_dir_meta}
 
     return save_dir_base, other_save_dirs
 
 def _proc_check_std_fsds_ids(vars: list, category=['metric','target_var'][0]):
     """
-    Run check to ensure that variables are listed in the standardized fsds_categories.yaml
+    Run check to ensure that variables are listed in the standardized 
+        fsds_categories.yaml
 
-    :param vars: user-defined variable listing of the anticipated mapped variables (e.g. ['NSE','RMSE'])
+    :param vars: user-defined variable listing of the anticipated mapped
+        variables (e.g. ['NSE','RMSE'])
     :type vars: list
-    :param category: choose the category of 'metric' or 'target_var' desired from the fsds standardized categories file. Defaults to 'metric'
+    :param category: choose the category of 'metric' or 'target_var' desired
+        from the fsds standardized categories file. Defaults to 'metric'
     :type category: list, optional
-    :raises ValueError: If at least one of the provided vars is not standard, raises error. 
+    :raises ValueError: If at least one of the provided vars is not standard,
+        raises error. 
     """
 
     # perform check on input data and convert to list if needed:
@@ -197,9 +213,14 @@ def _proc_check_std_fsds_ids(vars: list, category=['metric','target_var'][0]):
     if not all(bool_chck):
         bad_vars = list(compress(vars,[not x for x in bool_chck]))
         allowable_vars = ",".join(sub_std_config['var'])
-        raise ValueError(f'The following {category} mappings defined in the dataset schema do not correspond to the standardized {category} names: \n {", ".join(bad_vars)} \n Allowable variables include: {allowable_vars}')
+        raise ValueError(f'The following {category} mappings defined in the'
+                            ' dataset schema do not correspond to the'
+                            f' standardized {category} names: \n
+                            f' {", ".join(bad_vars)} \n Allowable'
+                            f' variables include: {allowable_vars}')
     else:
-        print(f'The {category} mappings from the dataset schema match expected format.')
+        print(f'The {category} mappings from the dataset schema match'
+                ' expected format.')
 
 
 def _proc_check_input_df(df: pd.DataFrame, 
@@ -309,7 +330,8 @@ def proc_col_schema(df: pd.DataFrame,
     save_loc = col_schema_df.loc[0, 'save_loc']
 
     if formulation_id == None:
-        # Create formulation_id as a combination of formulation_base and other elements
+        # Create formulation_id as a combination of formulation_base and 
+        # other elements
         formulation_id = '_'.join(
             list(
                 filter(
@@ -366,14 +388,20 @@ def proc_col_schema(df: pd.DataFrame,
         if save_type == 'csv':
             df.to_csv(save_path_eval_metr)
         else:
-            df.to_parquet(Path(str(save_path_eval_metr).replace('.csv','.parquet')))
+            df.to_parquet(
+                Path(str(save_path_eval_metr).replace('.csv','.parquet'))
+                )
         # Write metadata table corresponding to these metric data table(s) 
         # (e.g. startDate, endDate)
-        save_path_meta = Path(_other_save_dirs['meta'] / f'{uniq_filename}_metadata.csv')
+        save_path_meta = Path(
+            _other_save_dirs['meta'] / f'{uniq_filename}_metadata.csv'
+            )
         if save_type == 'csv':
             col_schema_df.to_csv(save_path_meta)
         else:
-            col_schema_df.to_parquet(Path(str(save_path_meta).replace('.csv','.parquet')))
+            col_schema_df.to_parquet(
+                Path(str(save_path_meta).replace('.csv','.parquet'))
+                )
         print(f"Saved files within a sub-directory structure inside {dir_save}")
     elif save_type == 'netcdf':
         save_path_nc = Path(_save_dir_base/Path(f'{uniq_filename}.nc'))

@@ -73,8 +73,8 @@ proc_attr_usgs_nhd <- function(comid,usgs_vars){
     var_id <- usgs_meta$ID[r]
     ls_usgs_mlti[[r]] <- arrow::open_dataset(usgs_meta$s3_url[r]) %>%
       dplyr::select(dplyr::all_of(c("COMID",var_id))) %>%
-      dplyr::filter(COMID==comid) %>%
-      dplyr::collect()
+      dplyr::collect() %>%
+      dplyr::filter(COMID==!!comid) #%>%
   }
   # Combining it all
   usgs_subvars <- ls_usgs_mlti %>% purrr::reduce(dplyr::full_join, by = 'COMID')
@@ -108,6 +108,10 @@ proc_attr_hf <- function(comid, dir_hydfab,custom_name="{lyrs}_",ext = 'gpkg',
     warning(glue::glue("creating the following directory: {dir_hydfab}"))
     base::dir.create(dir_hydfab)
   }
+
+  # Generate the nldi feature listing
+  nldi_feat <- list(featureSource ="comid",
+                         featureID = comid)
 
   # Download hydrofabric file if it doesn't exist already
   # Utilize hydrofabric subsetter for the catchment and download to local path
@@ -150,8 +154,10 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
   #' @param lyrs character. The layer names of interest from the hydrofabric gpkg. Default 'network'
   #' @param overwrite boolean. Should the hydrofabric cloud data acquisition be redone and overwrite any local files? Default FALSE.
   #' @export
+
+  # Retrieve the hydrofabric id
   net <- proc.attr.hydfab::proc_attr_hf(comid=comid,dir_hydfab=Retr_Params$paths$dir_hydfab,
-                      custom_name = "{lyrs}_",lyrs=lyrs,overwrite=FALSE)
+                      custom_name = "{lyrs}_",lyrs=lyrs,overwrite=overwrite)
 
   attr_data <- list()
   if ('ha_vars' %in% names(Retr_Params$vars)){
@@ -159,7 +165,8 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
     attr_data[['ha']] <- proc.attr.hydfab::proc_attr_hydatl(s3_path=Retr_Params$paths$s3_path_hydatl,
                                           hf_id=net$hf_id,
                                           ha_vars=Retr_Params$vars$ha_vars) %>%
-      dplyr::rename("COMID" = "hf_id") # ensures 'COMID' exists as colname
+                                # ensures 'COMID' exists as colname
+                                dplyr::rename("COMID" = "hf_id")
   }
   if (base::any(base::grepl("usgs_vars", names(Retr_Params$vars)))){
     # USGS nhdplusv2 query

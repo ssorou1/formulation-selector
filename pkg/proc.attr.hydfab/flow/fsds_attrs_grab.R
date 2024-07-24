@@ -1,0 +1,97 @@
+#' @title Workflow processing script to grab catchment attributes
+#' @author Guy Litt \code{guy.litt@noaa.gov}
+#' @description
+#' A short description...
+#'
+# Changelog / Contributions
+#   2024-07-24 Originally created, GL
+
+
+
+library(tibble)
+library(yaml)
+library(tidync)
+library(proc.attr.hydfab)
+
+# TODO is AWS_NO_SIGN_REQUEST necessary??
+# Sys.setenv(AWS_NO_SIGN_REQUEST="YES")
+
+# Package building resource: https://r-pkgs.org/
+
+# TODO create config yaml
+# Define input directory:
+# TODO change this to reading the standardized metadata, not the generated data
+raw_config <- yaml::read_yaml("/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_schema.yaml")
+
+datasets <- 'all'
+
+home_dir <- Sys.getenv("HOME")
+dir_base <- file.path(home_dir,'noaa/regionalization/data')
+
+dir_std_base <- file.path(dir_base,"input/user_data_std")
+dir_hydfab <- file.path(dir_base,'input/hydrofabric')
+dir_hydfab <- file.path(home_dir,'noaa','hydrofabric')
+
+save_dir <- dir_hydfab
+
+s3_base <- "s3://lynker-spatial/tabular-resources"
+s3_bucket <- 'lynker-spatial'
+s3_path_hydatl <- glue::glue('{s3_base}/hydroATLAS/hydroatlas_vars.parquet')
+
+
+# Additional config options
+hf_cat_sel <- c("total","all")[1] # total: interested in the single location's aggregated catchment data; all: all subcatchments of interest
+ext <- 'gpkg'
+attr_sources <- c("hydroatlas","streamcat","usgs")
+ha_vars <- c('pet_mm_s01', 'cly_pc_sav', 'cly_pc_uav') # hydroatlas variables
+sc_vars <- c() # TODO look up variables. May need to select datasets first
+usgs_vars <- c('TOT_TWI','TOT_PRSNOW','TOT_POPDENS90','TOT_EWT','TOT_RECHG') # list of variables retrievable using nhdplusTools::get_characteristics_metadata()
+#-----------------------------------------------------
+if (!dir.exists(dir_hydfab)){
+  dir.create(dir_hydfab)
+}
+
+# Make this an option if processing all datasets desired. Otherwise list datasets in config file
+if(datasets=='all'){
+  datasets <- list.dirs(dir_std_base,recursive=F)
+}
+
+
+# TODO generate this listing structure based on what is provided in yaml config & accounting for empty entries
+Retr_Params <- list(paths = list(dir_hydfab=dir_hydfab,
+                              s3_path_hydatl = s3_path_hydatl),
+                 vars = list(usgs_vars = usgs_vars,
+                             ha_vars = ha_vars)
+                 )
+
+for (ds in datasets){
+  ds <- "juliemai-xSSA" # TODO remove
+
+  # TODO read in a standard format filename and file type
+  dat_in <- file.path(dir_std_base,ds,'juliemai-xSSA_Raven_blended.nc')
+
+  # TODO if reading a netcdf file:
+  std_data <- tidync::tidync(dat_in)
+
+  # Extract the gage ids
+  gage_ids <- std_data$transforms$gage_id$gage_id
+
+  ls_gage_attr <- list()
+  for (gid in gage_ids){
+    # Retrieve the COMID
+    # Reference: https://doi-usgs.github.io/nhdplusTools/articles/get_data_overview.html
+    site_id <- paste0('USGS-',gid)
+    nldi_feat <- list(featureSource ="nwissite",
+                 featureID = site_id)
+    site_feature <- nhdplusTools::get_nldi_feature(nldi_feature = nldi_feat)
+    comid <- site_feature['comid']$comid
+    # Retrieve the variables corresponding to datasets of interest
+    all_attr <- proc.attr.hydfab::proc_attr_wrap(comid, Retr_Params, lyrs='network',overwrite=FALSE)
+
+    ls_gage_attr[[gid]] <- all_attr
+  }
+  # TODO Combine attribute data for all gages
+  # TODO write combined dataset to file
+  # TODO create a checker to see if the combined dataset exists in file already with all expected variables and gage ids
+
+}

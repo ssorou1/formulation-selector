@@ -1,0 +1,20 @@
+Package: proc.attr.hydfab
+Title: Grab and process catchment attributes using the hydrofabric
+Version: 0.0.0.9000
+Authors@R: 
+    person("Guy", "Litt", , "guy.litt@noaa.gov", role = c("aut", "cre"),
+           comment = c(ORCID = "https://orcid.org/0000-0003-1996-7468"))
+Description:  Utilizing the hydrofabric as a backbone for identifying surface 
+    water features, retrieve user-specified variables of catchment attributes 
+    from sources such as USGS NHDplusv2, hydroatlas, etc.
+License: Software code created by U.S. Government employees is not subject to 
+    copyright in the United States (17 U.S.C. Sec105). 
+    The United States/Department of Commerce reserve all rights to seek and 
+    obtain copyright protection in countries other than the United States for 
+    Software authored in its entirety by the Department of Commerce. 
+    To this end, the Department of Commerce hereby grants to Recipient a
+    royalty-free, nonexclusive license to use, copy, and create derivative works 
+    of the Software outside of the United States.
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2

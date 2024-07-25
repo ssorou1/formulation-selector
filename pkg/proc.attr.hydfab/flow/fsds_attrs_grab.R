@@ -17,8 +17,6 @@ library(proc.attr.hydfab)
 # TODO is AWS_NO_SIGN_REQUEST necessary??
 # Sys.setenv(AWS_NO_SIGN_REQUEST="YES")
 
-# Package building resource: https://r-pkgs.org/
-
 # TODO create config yaml
 # Define input directory:
 # TODO change this to reading the standardized metadata, not the generated data
@@ -33,7 +31,7 @@ dir_std_base <- file.path(dir_base,"input/user_data_std")
 dir_hydfab <- file.path(dir_base,'input/hydrofabric')
 dir_hydfab <- file.path(home_dir,'noaa','hydrofabric')
 
-save_dir <- dir_hydfab
+save_dir <- file.path(dir_base,)
 
 s3_base <- "s3://lynker-spatial/tabular-resources"
 s3_bucket <- 'lynker-spatial'
@@ -86,8 +84,14 @@ for (ds in datasets){
                  featureID = site_id)
     site_feature <- nhdplusTools::get_nldi_feature(nldi_feature = nldi_feat)
     comid <- site_feature['comid']$comid
+
+    print(paste0("Processing COMID ",comid))
     # Retrieve the variables corresponding to datasets of interest
     all_attr <- proc.attr.hydfab::proc_attr_wrap(comid, Retr_Params, lyrs='network',overwrite=FALSE)
+
+    # Write the attributes to file (intermediate file save)
+
+
 
     ls_gage_attr[[gid]] <- all_attr
   }

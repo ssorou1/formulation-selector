@@ -77,15 +77,13 @@ testthat::test_that("proc_attr_usgs_nhd", {
 
 })
 
-# TODO figure this one out
-# testthat::test_that("proc_attr_hf small, all divides",
-#  small_hf <- proc.attr.hydfab::proc_attr_hf(comid="14138870", dir_hydfab,
-#                                             custom_name="{lyrs}_",ext = 'gpkg',
-#                                             lyrs=c('divides','network')[2],
-#                                             hf_cat_sel=TRUE, overwrite=TRUE)
-#   testthat::expect_length(small_hf,2)
-#   testthat::expect_equal(dim(small_hf)[1],750)
-# })
+
+testthat::test_that("proc_attr_hf not a comid",{
+ testthat::expect_error(proc.attr.hydfab::proc_attr_hf(comid="13Notacomid14", dir_hydfab,
+                                                       custom_name="{lyrs}_",ext = 'gpkg',
+                                                       lyrs=c('divides','network')[2],
+                                                       hf_cat_sel=TRUE, overwrite=TRUE))
+})
 
 # Delete all files created inside the hydfab temp dir
 unlink(temp_dir)

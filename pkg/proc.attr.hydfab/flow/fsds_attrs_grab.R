@@ -31,7 +31,7 @@ dir_std_base <- file.path(dir_base,"input/user_data_std")
 dir_hydfab <- file.path(dir_base,'input/hydrofabric')
 dir_hydfab <- file.path(home_dir,'noaa','hydrofabric')
 
-save_dir <- file.path(dir_base,)
+path_db_attrs <- file.path(dir_base,)
 
 s3_base <- "s3://lynker-spatial/tabular-resources"
 s3_bucket <- 'lynker-spatial'
@@ -75,6 +75,7 @@ for (ds in datasets){
   # Extract the gage ids
   gage_ids <- std_data$transforms$gage_id$gage_id
 
+  # Grab all needed attributes
   ls_gage_attr <- list()
   for (gid in gage_ids){
     # Retrieve the COMID
@@ -89,14 +90,11 @@ for (ds in datasets){
     # Retrieve the variables corresponding to datasets of interest
     all_attr <- proc.attr.hydfab::proc_attr_wrap(comid, Retr_Params, lyrs='network',overwrite=FALSE)
 
-    # Write the attributes to file (intermediate file save)
-
-
-
     ls_gage_attr[[gid]] <- all_attr
   }
-  # TODO Combine attribute data for all gages
-  # TODO write combined dataset to file
-  # TODO create a checker to see if the combined dataset exists in file already with all expected variables and gage ids
+
+  # TODO Compile needed attributes from database with all the catchments of interest
+
+  # TODO write combined dataset to file as a compiled collection for training/prediction
 
 }

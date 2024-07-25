@@ -159,6 +159,17 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
   net <- proc.attr.hydfab::proc_attr_hf(comid=comid,dir_hydfab=Retr_Params$paths$dir_hydfab,
                       custom_name = "{lyrs}_",lyrs=lyrs,overwrite=overwrite)
 
+  # TODO add check that the catchment variable data has been created
+  list_attr_exist <- list(names(Retr_Params$vars))
+  if(overwrite==FALSE){
+
+    # TODO if some attrs already exist, identify what those are in list_attr_exist
+
+    # TODO reduce list of needed attributes by modifying Retr_Params$vars$var_type_here
+
+
+  }
+
   attr_data <- list()
   if ('ha_vars' %in% names(Retr_Params$vars)){
     # Hydroatlas variable query
@@ -176,6 +187,13 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
 
   ########## May add more data sources here and append to attr_data ###########
 
+
+  # TODO write newly acquired data to the database
+  # attr db columns: comid, variable, value, data source, data source version, date acquired
+
+  # TODO read in attribute data that has already been acquired
+
+  # TODO combine existing
 
   # Ensure consistent identifier formatting has been created before combining
   if (!base::all(base::unlist((base::lapply(attr_data, function(x) any(grepl("COMID", colnames(x)))))))){

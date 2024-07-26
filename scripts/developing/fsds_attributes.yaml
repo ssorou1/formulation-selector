@@ -1,7 +1,7 @@
 hydroatlas_attributes: 
   identification:
-    - 'hf_id'
-    - 'hydroatlas_id'
+    - 'hf_id': 'hydrofabric id'
+    - 'hydroatlas_id': 'hydroatlas id'
   hydrology: 
     - 'dis_m3_pyr': 'sub-basin annual average natural discharge'
     - 'dis_m3_pmn': 'sub-basin annual minimum natural discharge'

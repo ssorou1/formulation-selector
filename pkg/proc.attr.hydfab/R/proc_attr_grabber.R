@@ -12,6 +12,7 @@ library(nhdplusTools)
 library(hydrofabric)
 library(hfsubsetR)
 library(data.table)
+library(data.table)
 
 proc_attr_std_hfsub_name <- function(comid,custom_name='', ext='gpkg'){
   #' @title Standardidze hydrofabric subsetter's local filename
@@ -168,6 +169,11 @@ proc_attr_exst_wrap <- function(comid,path_attrs,vars_ls,bucket_conn=NA){
   # Check that data has been created
   path_attrs_exst <- any(c(base::file.exists(path_attrs)))
 
+  # Also make sure the directory exists:
+  if(!dir.exists(base::dirname(path_attrs)) && is.na(bucket_conn)){
+    dir.create(base::dirname(path_attrs))
+  } # TODO adapt if stored in cloud (e.g. s3 connection checker)
+
   if(path_attrs_exst==TRUE){
     dt_all <- arrow::open_dataset(path_attrs) %>% as.data.table()
     need_vars <- list()
@@ -255,7 +261,7 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
   }
   # Ensure consistent format of dataset
   attr_data_ls <- list()
-  for(dat_srce in names(attr_data)){
+  for(dat_srce in base::names(attr_data)){
     sub_dt_dat <- attr_data[[dat_srce]] %>% data.table::as.data.table()
     sub_dt_dat$COMID <- base::as.character(sub_dt_dat$COMID)
     sub_dt_dat$data_source <- base::as.character(dat_srce)
@@ -268,15 +274,15 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
   }
   # Combine freshly-acquired data
   dt_new_dat <- data.table::rbindlist(attr_data_ls)
-  # # Ensure no factor classes exist for attributes
-  # dt_long$attribute <- base::as.character(dt_long$attribute)
 
   # Combined dt of existing data and newly acquired data
-  if(base::dim(dt_all)[1]>0){
+  if(base::dim(dt_all)[1]>0 && base::dim(dt_new_dat)[1]>0){
     dt_cmbo <- data.table::merge.data.table(dt_all,dt_new_dat,
                                             all=TRUE,no.dups=TRUE)
-  } else {
+  } else if (base::dim(dt_new_dat)[1] >0){
     dt_cmbo <- dt_new_dat
+  } else {
+    dt_cmbo <- dt_all
   }
 
   # Write attribute variable data specific to a comid here

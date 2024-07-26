@@ -25,10 +25,11 @@ ha_vars <- c('pet_mm_s01', 'cly_pc_sav', 'cly_pc_uav') # hydroatlas variables
 usgs_vars <- c('TOT_TWI','TOT_PRSNOW','TOT_POPDENS90','TOT_EWT','TOT_RECHG')
 
 # Define data directories to a package-specific data path
-dir_base <- system.file("extdata")
+dir_base <- system.file("extdata",package="proc.attr.hydfab")
 temp_dir <- tempdir()
 dir_hydfab <- file.path(temp_dir,'hfab')
-dir_db_attrs <- file.path(temp_dir,'attrs')
+dir_db_attrs <- file.path(temp_dir,'attrs') # used for temporary attr retrieval
+dir_db_attrs_pkg <- system.file("extdata","attributes_pah",package="proc.attr.hydfab")# permanent pacakage location
 
 Retr_Params <- list(paths = list(dir_hydfab=dir_hydfab,
                                  dir_db_attrs=dir_db_attrs,
@@ -43,6 +44,33 @@ testthat::test_that("proc_attr_std_hfsub_name standardized name generator", {
   testthat::expect_equal('hydrofab_testit_111.parquet',
                proc.attr.hydfab::proc_attr_std_hfsub_name(111,"testit",'parquet'))
 
+})
+
+
+testthat::test_that('retrieve_attr_exst', {
+  comids <- c("1520007","1623207","1638559","1722317")
+  vars <- Retr_Params$vars %>% unlist() %>% unname()
+
+  # Run tests based on expected dims
+  dat_attr_all <- proc.attr.hydfab::retrieve_attr_exst(comids,vars,dir_db_attrs_pkg)
+  testthat::expect_equal(length(unique(dat_attr_all$COMID)),
+                         length(comids))
+  testthat::expect_equal(length(unique(dat_attr_all$attribute)),length(vars))
+
+  testthat::expect_error(proc.attr.hydfab::retrieve_attr_exst(comids,
+                                                              vars,
+                                                              dir_db_attrs='a'))
+  # Testing for No parquet files present
+  capt_no_parquet <- testthat::capture_condition(proc.attr.hydfab::retrieve_attr_exst(comids,
+                                                                vars,
+                                                                dir_db_attrs=dirname(dir_db_attrs_pkg)))
+  testthat::expect_true(grepl("parquet",capt_no_parquet$message))
+  nada_var <- testthat::capture_warning(retrieve_attr_exst(comids,vars=c("TOT_TWI","naDa"),
+                                              dir_db_attrs_pkg))
+  testthat::expect_true(grepl("naDa",nada_var$message))
+  nada_comid <- testthat::capture_condition(retrieve_attr_exst(comids=c("1520007","1623207","nada"),vars,
+                                              dir_db_attrs_pkg))
+  testthat::expect_true(base::grepl("nada",nada_comid$message))
 })
 
 # Read in data of expected format
@@ -119,13 +147,13 @@ testthat::test_that("proc_attr_exst_wrap", {
   testthat::expect_true(nrow(ls_rslt$dt_all)>0)
 
   # Testing for a comid that doesn't exist
+  new_dir <- base::tempdir()
   ls_no_comid <- proc.attr.hydfab::proc_attr_exst_wrap(comid='notexist134',
-                                                      path_attrs=paste0(dir_db_attrs,'/newone/file.parquet'),
+                                                      path_attrs=paste0(new_dir,'/newone/file.parquet'),
                                                       vars_ls=Retr_Params$vars,
                                                       bucket_conn=NA)
   testthat::expect_true(nrow(ls_no_comid$dt_all)==0)
-  testthat::expect_true(dir.exists(paste0(dir_db_attrs,'/newone')))
+  # Kinda-sorta running the test, but only useful if new_dir exists
+  testthat::expect_equal(dir.exists(new_dir),
+                         dir.exists(paste0(new_dir,'/newone')))
 })
-
-# Delete all files created inside the hydfab temp dir Important!!
-unlink(temp_dir)

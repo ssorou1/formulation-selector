@@ -65,12 +65,17 @@ testthat::test_that('retrieve_attr_exst', {
                                                                 vars,
                                                                 dir_db_attrs=dirname(dir_db_attrs_pkg)))
   testthat::expect_true(grepl("parquet",capt_no_parquet$message))
-  nada_var <- testthat::capture_warning(retrieve_attr_exst(comids,vars=c("TOT_TWI","naDa"),
+  nada_var <- testthat::capture_warning(proc.attr.hydfab::retrieve_attr_exst(comids,vars=c("TOT_TWI","naDa"),
                                               dir_db_attrs_pkg))
   testthat::expect_true(grepl("naDa",nada_var$message))
-  nada_comid <- testthat::capture_condition(retrieve_attr_exst(comids=c("1520007","1623207","nada"),vars,
+  nada_comid <- testthat::capture_condition(proc.attr.hydfab::retrieve_attr_exst(comids=c("1520007","1623207","nada"),vars,
                                               dir_db_attrs_pkg))
   testthat::expect_true(base::grepl("nada",nada_comid$message))
+
+  testthat::expect_error(proc.attr.hydfab::retrieve_attr_exst(comids,vars=c(3134,3135),
+                                            dir_db_attrs_pkg))
+  testthat::expect_warning(proc.attr.hydfab::retrieve_attr_exst(comids=c(3134,3135),vars,
+                                            dir_db_attrs_pkg))
 })
 
 # Read in data of expected format

@@ -37,7 +37,8 @@ retrieve_attr_exst <- function(comids, vars, dir_db_attrs, bucket_conn=NA){
     # Let's try unlisting and unnaming just-in-case
     comids <- comids %>% base::unlist() %>% base::unname()
     if(!'character' %in% base::class(comids) ){
-      stop("comids expected to be character class")
+      warning("comids expected to be character class. converting")
+      comids <- base::as.character(comids)
     }
   }
   if(!'character' %in% base::class(vars)){

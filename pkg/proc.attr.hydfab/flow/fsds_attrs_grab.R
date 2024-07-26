@@ -114,6 +114,8 @@ for (ds in datasets){
   }
 
   # TODO Compile needed attributes from database with all the catchments of interest
+  # TODO CONSIDER using arrow::open_dataset()
+
 
   # TODO write combined dataset to file as a compiled collection for training/prediction
 

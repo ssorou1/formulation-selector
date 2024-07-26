@@ -8,12 +8,12 @@
 
 
 # unloadNamespace("proc.attr.hydfab")
-library(proc.attr.hydfab,quietly=TRUE)
-library(testthat,quietly=TRUE)
-library(dplyr,quietly=TRUE)
-library(arrow,quietly=TRUE)
-library(hydrofabric,quietly=TRUE)
-library(data.table,quietly=TRUE)
+suppressPackageStartupMessages(library(proc.attr.hydfab,quietly=TRUE))
+suppressPackageStartupMessages(library(testthat,quietly=TRUE))
+suppressPackageStartupMessages(library(dplyr,quietly=TRUE))
+suppressPackageStartupMessages(library(arrow,quietly=TRUE))
+suppressPackageStartupMessages(library(hydrofabric,quietly=TRUE))
+suppressPackageStartupMessages(library(data.table,quietly=TRUE))
 # TODO establish a basic config file to read in for this functionality
 comid <- "18094981"#"02479560"#14138870# A small basin
 s3_base <- "s3://lynker-spatial/tabular-resources"

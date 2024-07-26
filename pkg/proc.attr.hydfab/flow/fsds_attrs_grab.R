@@ -25,7 +25,9 @@ library(proc.attr.hydfab)
 # TODO change this to reading the standardized metadata, not the generated data
 raw_config <- yaml::read_yaml("/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_schema.yaml")
 
-datasets <- 'all'
+datasets <- ds <- c("juliemai-xSSA",'all')[1] # A listing of datasets to grab attributes. Dataset names match what is inside dir_std_base.  'all' processes all datasets inside dir_std_base.
+ds_nc_filenames <- c('juliemai-xSSA_Raven_blended.nc','*.nc')[1]
+
 
 home_dir <- Sys.getenv("HOME")
 dir_base <- file.path(home_dir,'noaa/regionalization/data')
@@ -38,9 +40,7 @@ dir_db_attrs <- file.path(dir_base,'input','attributes') # The local dir where a
 s3_base <- "s3://lynker-spatial/tabular-resources" # s3 path containing hydrofabric-formatted attribute datasets
 s3_bucket <- 'lynker-spatial' # s3 bucket containing hydrofabric data
 
-
 s3_path_hydatl <- glue::glue('{s3_base}/hydroATLAS/hydroatlas_vars.parquet') # path to hydroatlas data formatted for hydrofabric
-
 
 # Additional config options
 hf_cat_sel <- c("total","all")[1] # total: interested in the single location's aggregated catchment data; all: all subcatchments of interest
@@ -77,14 +77,24 @@ for(dir in Retr_Params$paths){
 
 
 for (ds in datasets){
-  ds <- "juliemai-xSSA" # TODO remove
 
   # TODO read in a standard format filename and file type
-  dat_in <- file.path(dir_std_base,ds,'juliemai-xSSA_Raven_blended.nc')
 
-  # TODO if reading a netcdf file:
-  std_data <- tidync::tidync(dat_in)
+  dir_ds <- base::file.path(dir_std_base,ds)
+  files_ds <- base::list.files(dir_ds)
+  fns <- base::lapply(ds_nc_filenames,
+                      function(x) files_ds[base::grep(x,files_ds)]) %>% unlist()
 
+  if (base::any(base::grepl(".nc",fns))){ # Read in a netcdf file
+    fn_nc <- fns[base::grep(".nc",fns)]
+    if(length(fn_nc)!=1){
+      stop(paste("Expected that only one netcdf file exists in dir:\n", dir_ds))
+    }
+    dat_in <- file.path(dir_std_base,ds,fn_nc)
+    std_data <- tidync::tidync(dat_in)
+  } else {
+    stop("Create a different file format reader here.")
+  }
 
   # TODO consider how different datasets will have different loc identifiers
   # Extract the gage ids
@@ -96,8 +106,6 @@ for (ds in datasets){
   for (gid in gage_ids){
     # Retrieve the COMID
     # Reference: https://doi-usgs.github.io/nhdplusTools/articles/get_data_overview.html
-
-
     site_id <- paste0('USGS-',gid) # TODO perform this in fsds_proc
 
     nldi_feat <- list(featureSource =featureSource,

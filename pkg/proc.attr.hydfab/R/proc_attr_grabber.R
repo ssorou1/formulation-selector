@@ -12,7 +12,6 @@ library(nhdplusTools)
 library(hydrofabric)
 library(hfsubsetR)
 library(data.table)
-library(data.table)
 
 proc_attr_std_hfsub_name <- function(comid,custom_name='', ext='gpkg'){
   #' @title Standardidze hydrofabric subsetter's local filename
@@ -175,7 +174,7 @@ proc_attr_exst_wrap <- function(comid,path_attrs,vars_ls,bucket_conn=NA){
   } # TODO adapt if stored in cloud (e.g. s3 connection checker)
 
   if(path_attrs_exst==TRUE){
-    dt_all <- arrow::open_dataset(path_attrs) %>% as.data.table()
+    dt_all <- arrow::open_dataset(path_attrs) %>% data.table::as.data.table()
     need_vars <- list()
     for(var_srce in names(vars_ls)){
       # Compare/contrast what is there vs. desired

@@ -112,17 +112,23 @@ for (dataset_name in datasets){
 
 
   # ----------------------- Grab all needed attributes ----------------------- #
-  ls_comid <- list()
-  for (gage_id in gage_ids){
+  ls_comid <- base::list()
+  for (gage_id in gage_ids){ #
+    if(!base::exists(gage_id)){
+      stop("MUST use 'gage_id' as the object name!!! \n
+      Expected when defining nldi_feat$featureID")
+    }
+
     # Retrieve the COMID
     # Reference: https://doi-usgs.github.io/nhdplusTools/articles/get_data_overview.html
-    site_id <- glue::glue(featureID) # This should expect 'gage_id' as a variable!
-
-    nldi_feat <- list(featureSource =featureSource,
-                 featureID = site_id)
+    nldi_feat <- base::list(featureSource =featureSource,
+                 featureID = glue::glue(featureID) # This should expect {'gage_id'} as a variable!
+                 )
     site_feature <- try(nhdplusTools::get_nldi_feature(nldi_feature = nldi_feat))
     if('try-error' %in% class(site_feature)){
-      stop("The following nldi features didn't work. You may need to revisit the configuration yaml file that processes this dataset in fsds_proc ")
+      stop(glue::glue("The following nldi features didn't work. You may need to
+           revisit the configuration yaml file that processes this dataset in
+          fsds_proc: \n {featureSource}, and featureID={featureID}"))
     }
     comid <- site_feature['comid']$comid
     ls_comid[[gage_id]] <- comid
@@ -141,5 +147,5 @@ for (dataset_name in datasets){
 
   dat_all_attrs <- proc.attr.hydfab::retrieve_attr_exst(comids, vars,
                                        Retr_Params$paths$dir_db_attrs)
-  rm(dat_all_attrs)
+  base::rm(dat_all_attrs)
 }

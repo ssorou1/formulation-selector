@@ -6,7 +6,10 @@
 #' acquire the attributes for each catchment, write to parquet database.
 #' @details Builds a parquet database for each individual comid when calling
 #' \code{proc.attr.hydfab::proc_attr_wrap}. From the directory of comids,
-#' creates a sub-directory of a specific dataset
+#' creates a sub-directory of a specific dataset.
+#'
+#' NOTE: In defining the featureSource and featureID, it's expected that the
+#' term 'gage_id' is used as a variable in glue syntax to create featureID
 #' @seealso [fsds_proc] A python package that processes input data for the
 #' formulation-selector
 
@@ -15,7 +18,7 @@
 
 library(tibble)
 library(yaml)
-library(tidync)
+library(ncdf4)
 library(proc.attr.hydfab)
 library(glue)
 # TODO is AWS_NO_SIGN_REQUEST necessary??
@@ -94,26 +97,33 @@ for (dataset_name in datasets){
       stop(glue::glue("Expected that only one netcdf file exists in dir:\n{dir_ds}"))
     }
     dat_in <- file.path(dir_std_base,dataset_name,fn_nc)
-    std_data <- tidync::tidync(dat_in)
+    std_data <- ncdf4::nc_open(dat_in)
+    attrs <- ncdf4::ncatt_get(std_data,varid=0)
+    featureSource <- attrs$featureSource
+    featureID <- attrs$featureID # intended to reformat gage_id into the appropriate nldi format using glue(e.g. glue('USGS-{gage_id}')
+    gage_ids <- std_data$dim$gage_id$vals   # Extract the gage ids
   } else {
     stop("Create a different file format reader here.")
   }
 
   # TODO consider how different datasets will have different loc identifiers
-  # Extract the gage ids
-  gage_ids <- std_data$transforms$gage_id$gage_id
-  featureSource <- 'nwissite' # TODO read in from std_data
+
+
+
 
   # ----------------------- Grab all needed attributes ----------------------- #
   ls_comid <- list()
   for (gage_id in gage_ids){
     # Retrieve the COMID
     # Reference: https://doi-usgs.github.io/nhdplusTools/articles/get_data_overview.html
-    site_id <- glue::glue('USGS-{gage_id}') # TODO perform this in fsds_proc
+    site_id <- glue::glue(featureID) # This should expect 'gage_id' as a variable!
 
     nldi_feat <- list(featureSource =featureSource,
                  featureID = site_id)
-    site_feature <- nhdplusTools::get_nldi_feature(nldi_feature = nldi_feat)
+    site_feature <- try(nhdplusTools::get_nldi_feature(nldi_feature = nldi_feat))
+    if('try-error' %in% class(site_feature)){
+      stop("The following nldi features didn't work. You may need to revisit the configuration yaml file that processes this dataset in fsds_proc ")
+    }
     comid <- site_feature['comid']$comid
     ls_comid[[gage_id]] <- comid
     # Retrieve the variables corresponding to datasets of interest & update database

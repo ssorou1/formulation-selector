@@ -14,7 +14,8 @@ inside \code{dir_dataset}}
 }
 \description{
 Reads output generated using \pkg{fsds_proc} python package and
-selects the gage_id location identifier and the attributes of interest
+selects the gage_id location identifier(s) and the
+featureSource & featureID that correspond to the gage_id
 }
 \details{
 Returns a list of the following objects:
@@ -23,5 +24,5 @@ featureSource: The type of nhdplus feature source corresponding to gage_id
 featureID: The method of converting gage_id into a standardized featureSource's featureID
 }
 \seealso{
-\link{[get_nldi_features]}
+\code{\link[nhdplusTools]{get_nldi_features}}
 }

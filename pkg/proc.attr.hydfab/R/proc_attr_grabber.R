@@ -304,7 +304,7 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
   #' @param Retr_Params list. List of list structure with parameters/paths needed to acquire variables of interest
   #' @param lyrs character. The layer names of interest from the hydrofabric gpkg. Default 'network'
   #' @param overwrite boolean. Should the hydrofabric cloud data acquisition be redone and overwrite any local files? Default FALSE.
-  #' @seealso [\link{proc_attrs_gageids}]
+  #' @seealso \code{\link{proc_attrs_gageids}}
   #' @export
 
   # Changelog / Contributions
@@ -391,10 +391,10 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
   #' acquired variables to a parquet file as a standard data.table format.
   #' Returns a list of comids that corresponded to the gage_ids
   #' @param gage_ids array of gage_id values to be queried for catchment attributes
-  #' @param featureSource The nhdplusTools::get_nldi_feature featureSource,
+  #' @param featureSource The \code{\link[nhdplusTools]{get_nldi_features}}feature featureSource,
   #' e.g. 'nwissite'
   #' @param featureID a glue-configured conversion of gage_id into a recognized
-  #' featureID for \code{nhdplusTools::get_nldi_feature()}. E.g. if gage_id is
+  #' featureID for \code{\link[nhdplusTools]{get_nldi_features}}. E.g. if gage_id is
   #' represents exactly what the nldi_feature$featureID should be, then
   #'  featureID="{gage_id}". In other instances, conversions may be necessary,
   #'  e.g. featureID="USGS-{gage_id}". When defining featureID, it's expected
@@ -464,7 +464,8 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
 proc_attr_read_gage_ids_fsds <- function(dir_dataset, ds_filenames=''){
   #' @title Read in standardized FSDS gage_id location identifiers
   #' @description Reads output generated using \pkg{fsds_proc} python package and
-  #' selects the gage_id location identifier and the attributes of interest
+  #' selects the gage_id location identifier(s) and the
+  #' featureSource & featureID that correspond to the gage_id
   #' @param dir_dataset directory path to the dataset
   #' @param ds_filenames a matching string specific to dataset(s) of interest
   #' inside \code{dir_dataset}
@@ -472,7 +473,7 @@ proc_attr_read_gage_ids_fsds <- function(dir_dataset, ds_filenames=''){
   #' gage_ids: array of gage_id values
   #' featureSource: The type of nhdplus feature source corresponding to gage_id
   #' featureID: The method of converting gage_id into a standardized featureSource's featureID
-  #' @seealso \link{[get_nldi_features]}
+  #' @seealso \code{\link[nhdplusTools]{get_nldi_features}}
   #' @export
 
   # Changelog/contributions
@@ -501,6 +502,9 @@ proc_attr_read_gage_ids_fsds <- function(dir_dataset, ds_filenames=''){
     featureID <- attrs$featureID # intended to reformat gage_id into the appropriate nldi format using glue(e.g. glue('USGS-{gage_id}')
   } else {
     stop("Create a different file format reader here that generates everything in the return list.")
+    # TODO make this more adaptable so that it doesn't depend on running python fsds_proc beforehand
+    # Idea: e.g. read in user-defined gage_id data as a .csv
+    # Idea: read in gage_id data inside a non-standard netcdf file, then define featureSource and featureID from a separate yaml file
   }
   return(base::list(gage_ids=gage_ids, featureSource=featureSource, featureID=featureID))
 }

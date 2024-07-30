@@ -4,7 +4,7 @@
 @description: Reads in the xSSA dataset, 
     subset xSSA data to just CAMELS basins, 
     and converts to a standard format expected by the FSDS tooling.
-@usage: python proc_xssa_metrics.py "/full/path/to/xssa_schema.yaml"
+@usage: python proc_xssa_metrics.py "/full/path/to/xssa_config.yaml"
 
 Changelog/contributions
     2024-07-02 Originally created, GL
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument('path_config', type=str, help='Path to the YAML configuration file')
     args = parser.parse_args()
     # The path to the configuration
-    path_config = args.path_config # '/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_schema.yaml' 
+    path_config = args.path_config # '/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_config.yaml' 
 
     if not Path(path_config).exists():
         raise ValueError("The provided path to the configuration file does not exist: {path_config}")

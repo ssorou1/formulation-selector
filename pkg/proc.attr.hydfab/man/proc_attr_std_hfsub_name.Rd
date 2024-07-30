@@ -14,5 +14,5 @@ proc_attr_std_hfsub_name(comid, custom_name = "", ext = "gpkg")
 \item{ext}{file extension of the hydrofrabric data. Default 'gpkg'}
 }
 \description{
-Standardidze hydrofabric subsetter's local filename
+Internal function that ensures consistent filename
 }

@@ -18,8 +18,8 @@ proc_attr_wrap(comid, Retr_Params, lyrs = "network", overwrite = FALSE)
 \description{
 Identifies a comid location using the hydrofabric and then
 acquires user-requested variables from multiple sources. Writes all
-acquired variables to a parquet file. Re-processing runs only download data
-that have not yet been acquired.
+acquired variables to a parquet file as a standard data.table format.
+Re-processing runs only download data that have not yet been acquired.
 }
 \details{
 Function returns & writes a data.table of all these fields:
@@ -28,6 +28,9 @@ data_source - where the data came from (e.g. 'usgs_nhdplus__v2','hydroatlas__v1'
 dl_timestamp - timestamp of when data were downloaded
 attribute - the variable identifier used in a particular dataset
 value - the value of the identifier
+}
+\seealso{
+\link{\link{proc_attrs_gageids}}
 }
 \author{
 Guy Litt \email{guy.litt@noaa.gov}

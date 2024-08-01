@@ -5,14 +5,21 @@ from setuptools import setup, find_packages
 # > python setup.py sdist bdist_wheel
 # > pip install -e ./
 setup(
-    include_package_data = True,
-    package_data = {'' : ['/data/*.yaml']},
+    include_package_data=True,
+    package_data={'' : ['./data/*.yaml']},
     name="fsds_proc",
     version="0.1.3",
     author="Guy Litt",
     author_email="guy.litt@noaa.gov",
     description="A simple package for processing data in the formulation selection decision support tool",
     packages=find_packages(),
+    install_requires=[ 
+        'pandas',
+        'pyyaml',
+        'wheel',
+        'xarray',
+        'zarr'
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

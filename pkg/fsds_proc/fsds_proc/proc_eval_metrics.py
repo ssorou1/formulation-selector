@@ -66,13 +66,20 @@ def _conv_ls_dicts_df_long(config: dict):
     return dft
 
 
-def _proc_check_input_config(config: dict, std_keys=['file_io','col_schema','formulation_metadata','references'],
-                             req_col_schema=['gage_id', 'metric_cols'],
-                             req_form_meta=['dataset_name','formulation_base','target_var','start_date', 'end_date','cal_status'],
-                             req_file_io=['dir_save', 'save_type','save_loc']):
+def _proc_check_input_config(
+    config: dict, 
+    std_keys=['file_io','col_schema','formulation_metadata','references'],
+    req_col_schema=['gage_id', 'metric_cols'],
+    req_form_meta=[
+        'dataset_name','formulation_base','target_var','start_date', 
+        'end_date','cal_status'
+        ],
+    req_file_io=['dir_save', 'save_type','save_loc']
+    ):
     
     """
-    Check input config file to ensure it contains the minimum expected categories
+    Check input config file to ensure it contains the minimum expected 
+        categories
 
     :raises ValueError: _description_
     :raises ValueError: _description_
@@ -86,22 +93,29 @@ def _proc_check_input_config(config: dict, std_keys=['file_io','col_schema','for
     # Expected standard keys:
     chck_dict = {key: config[key] for key in std_keys}
     if len(chck_dict) != len(std_keys):
-        raise ValueError(f"The provided keys in the input config file should include the following: {', '.join(std_keys)}")
+        raise ValueError("The provided keys in the input config file"
+                        " should include the following:"
+                        f" {', '.join(std_keys)}")
     
     # required keys defined inside col_schema
     keys_col_schema = _proc_flatten_ls_of_dict_keys(config, 'col_schema')
     if not all([x in keys_col_schema for x in req_col_schema]):
-        raise ValueError(f"The input config file expects the following defined under 'col_schema': {', '.join(req_col_schema)}")
+        raise ValueError("The input config file expects the following"
+                        " defined under 'col_schema':"
+                        f" {', '.join(req_col_schema)}")
 
     # required keys defined in formulation_metadata
     keys_form_meta = _proc_flatten_ls_of_dict_keys(config, 'formulation_metadata')
     if not all([x in keys_form_meta for x in req_form_meta]):
-        raise ValueError(f"The input config file expects the following defined under 'formulation_metadata': {', '.join(req_form_meta)}")
+        raise ValueError("The input config file expects the following"
+                        " defined under 'formulation_metadata':"
+                        f" {', '.join(req_form_meta)}")
 
     # required keys defined in file_io
     keys_file_io = _proc_flatten_ls_of_dict_keys(config, 'file_io')
     if not all([x in keys_file_io for x in req_file_io]):
-        raise ValueError(f"The input config file expects the following defined under 'formulation_metadata': {', '.join(req_file_io)}")
+        raise ValueError(f"The input config file expects the following"
+                        f" defined under 'formulation_metadata': {', '.join(req_file_io)}")
 
 def read_schm_ls_of_dict(schema_path: str | os.PathLike) -> pd.DataFrame:
     """Read a dataset's schema file designed as a list of dicts
@@ -131,14 +145,17 @@ def read_schm_ls_of_dict(schema_path: str | os.PathLike) -> pd.DataFrame:
 
     return df_all
 
-def _save_dir_struct(dir_save: str | os.PathLike, dataset_name: str, save_type:str ) -> tuple[Path, dict]:
+def _save_dir_struct(dir_save: str | os.PathLike, 
+                        dataset_name: str, 
+                        save_type:str ) -> tuple[Path, dict]:
     # Create a standard directory saving structure (in cases of local filesaving)
     save_dir_base = Path(Path(dir_save) / Path('user_data_std') / dataset_name)
     save_dir_base.mkdir(exist_ok=True, parents = True)
 
     other_save_dirs = dict()
     if save_type == 'csv' or save_type == 'parquet': # For non-hierachical files
-        # Otherwise single hierarchical files will be saved in lieu of subdirectories populated w/ .csv files
+        # Otherwise single hierarchical files will be saved in lieu of
+        # subdirectories populated w/ .csv files
 
         # Design dir structure for writing multiple files
         save_dir_attr = Path(save_dir_base / Path('attributes'))
@@ -153,20 +170,28 @@ def _save_dir_struct(dir_save: str | os.PathLike, dataset_name: str, save_type:s
         save_dir_eval_ts.mkdir(exist_ok=True, parents = True)
         save_dir_meta_lic.mkdir(exist_ok=True, parents = True)
         save_dir_config.mkdir(exist_ok=True, parents = True)
-        other_save_dirs = {'attr': save_dir_attr, 'eval_metr': save_dir_eval_metr, 'eval_ts' : save_dir_eval_ts,
-                           'meta': save_dir_meta, 'meta_lic': save_dir_meta_lic, 'config': save_dir_meta}
+        other_save_dirs = {'attr': save_dir_attr, 
+                            'eval_metr': save_dir_eval_metr, 
+                            'eval_ts' : save_dir_eval_ts,
+                            'meta': save_dir_meta, 
+                            'meta_lic': save_dir_meta_lic, 
+                            'config': save_dir_meta}
 
     return save_dir_base, other_save_dirs
 
 def _proc_check_std_fsds_ids(vars: list, category=['metric','target_var'][0]):
     """
-    Run check to ensure that variables are listed in the standardized fsds_categories.yaml
+    Run check to ensure that variables are listed in the standardized 
+        fsds_categories.yaml
 
-    :param vars: user-defined variable listing of the anticipated mapped variables (e.g. ['NSE','RMSE'])
+    :param vars: user-defined variable listing of the anticipated mapped
+        variables (e.g. ['NSE','RMSE'])
     :type vars: list
-    :param category: choose the category of 'metric' or 'target_var' desired from the fsds standardized categories file. Defaults to 'metric'
+    :param category: choose the category of 'metric' or 'target_var' desired
+        from the fsds standardized categories file. Defaults to 'metric'
     :type category: list, optional
-    :raises ValueError: If at least one of the provided vars is not standard, raises error. 
+    :raises ValueError: If at least one of the provided vars is not standard,
+        raises error. 
     """
 
     # perform check on input data and convert to list if needed:
@@ -188,20 +213,30 @@ def _proc_check_std_fsds_ids(vars: list, category=['metric','target_var'][0]):
     if not all(bool_chck):
         bad_vars = list(compress(vars,[not x for x in bool_chck]))
         allowable_vars = ",".join(sub_std_config['var'])
-        raise ValueError(f'The following {category} mappings defined in the dataset schema do not correspond to the standardized {category} names: \n {", ".join(bad_vars)} \n Allowable variables include: {allowable_vars}')
+        raise ValueError(f'The following {category} mappings defined in the'
+                            ' dataset schema do not correspond to the'
+                            f' standardized {category} names:'
+                            f' {", ".join(bad_vars)} \n Allowable'
+                            f' variables include: {allowable_vars}')
     else:
-        print(f'The {category} mappings from the dataset schema match expected format.')
+        print(f'The {category} mappings from the dataset schema match'
+                ' expected format.')
 
 
-def _proc_check_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.DataFrame:
+def _proc_check_input_df(df: pd.DataFrame, 
+                         col_schema_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Checks the input dataset for consistency in expected column format as generated from the yaml config file.
+    Checks the input dataset for consistency in expected column format as 
+        generated from the yaml config file.
 
-    :param df: The dataset of interest containing at a minimum catchment ID and evaluation metrics
+    :param df: The dataset of interest containing at a minimum catchment ID 
+        and evaluation metrics
     :type df: pd.DataFrame
-    :param col_schema_df: The column schema naming convention ingested from the yaml file corresponding to the dataset.
+    :param col_schema_df: The column schema naming convention ingested from 
+        the yaml file corresponding to the dataset.
     :type col_schema_df: pd.DataFrame
-    :return: wide format df ensuring that the unique identifier for each row is 'gage_id'
+    :return: wide format df ensuring that the unique identifier for 
+        each row is 'gage_id'
     :rtype: pd.DataFrame
 
     note::
@@ -211,22 +246,40 @@ def _proc_check_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.Da
     """
 
 
-    gage_id = col_schema_df['gage_id'].iloc[0]
-    metric_cols = col_schema_df['metric_cols'].iloc[0]
+    gage_id = col_schema_df.loc[0, 'gage_id']
+    metric_cols = col_schema_df.loc[0, 'metric_cols']
     metrics = metric_cols.split('|')
 
-    if df.columns.str.contains(metric_cols).sum() != len(metrics):
+    # check that all metric columns in schema file are in input dataframe
+    # extract column names holding metrics
+    metric_columns = metric_cols.split("|")
 
-        warnings.warn(f'Not all metric columns {", ".join(metrics)} are inside df columns. Revise the config file or ensure the input data is in appropriate format (i.e. wide format for each variable)')
+    if df.columns.isin(metric_columns).sum() != len(metrics):
+
+        # get names of metrics not in df
+        missing_columns = [
+            col for col in metric_columns if col not in df.columns
+            ]
+
+        warnings.warn('\nThe following metric columns are not in your input'
+                      f' dataframe, df:\n    {", ".join(missing_columns)}\n'
+                      ' \nRevise the config file or ensure'
+                       ' the input data is in appropriate format\n'
+                        ' (i.e. wide format for each variable)')
  
     if not df.index.name == 'gage_id':
         # Change the name to gage_id   
         df.rename(columns = {gage_id : 'gage_id'},inplace=True)
         if not any(df.columns.str.contains('gage_id')):
-            warnings.warn(f'Expecting one df column to be named: {gage_id} - per the config file. Inspect config file and/or dataframe col names')
+            warnings.warn(f'Expecting one df column to be named: {gage_id}'
+                          ' - per the config file. Inspect config file'
+                          ' and/or dataframe col names')
         # Set gage_id as the index
         if any(df['gage_id'].duplicated()):
-            warnings.warn('Expect only one gage_id for each row in the data. Convert df to wide format when passing to proc_col_schema(). This could create problems if writing standardized data in hierarchical format.')
+            warnings.warn('Expect only one gage_id for each row in the data.'
+                          ' Convert df to wide format when passing to'
+                          ' proc_col_schema(). This could create problems'
+                           ' if writing standardized data in hierarchical format.')
         else: # We can set the index as 'gage_id'
             df.set_index('gage_id', inplace=True)
 
@@ -242,15 +295,21 @@ def _proc_check_input_df(df: pd.DataFrame, col_schema_df: pd.DataFrame) -> pd.Da
 
     return df
 
-def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str | os.PathLike) -> xr.Dataset:
+def proc_col_schema(df: pd.DataFrame, 
+                    col_schema_df: pd.DataFrame, 
+                    dir_save: str | os.PathLike) -> xr.Dataset:
     """
-    Process model evaluation metrics into individual standardized files and save a standardized metadata file.
+    Process model evaluation metrics into individual standardized files 
+        and save a standardized metadata file.
 
-    :param df: pd.DataFrame type. The dataset of interest containing at a minimum catchment ID and evaluation metrics
+    :param df: pd.DataFrame type. The dataset of interest containing at a 
+        minimum catchment ID and evaluation metrics
     :type df: pd.DataFrame
-    :param col_schema_df: The column schema naming convention ingested from the yaml file corresponding to the dataset. C
+    :param col_schema_df: The column schema naming convention ingested from 
+        the yaml file corresponding to the dataset. C
     :type col_schema_df: pd.DataFrame
-    :param dir_save: Path for saving the standardized metric data file(s) and the metadata file.
+    :param dir_save: Path for saving the standardized metric data file(s)
+        and the metadata file.
     :type dir_save: str | os.PathLike
     :raises ValueError: _description_
     :return: _description_
@@ -264,14 +323,29 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
     """
     print(f"Standardizing datasets and writing to {dir_save}")
     # Based on the standardized column schema naming conventions
-    dataset_name =  col_schema_df['dataset_name'].iloc[0]
-    formulation_id =  col_schema_df['formulation_id'].iloc[0]
-    formulation_base =  col_schema_df['formulation_base'].iloc[0]
-    save_type = col_schema_df['save_type'].iloc[0]
-    save_loc = col_schema_df['save_loc'].iloc[0]
+    dataset_name =  col_schema_df.loc[0, 'dataset_name']
+    formulation_id =  col_schema_df.loc[0, 'formulation_id']
+    formulation_base =  col_schema_df.loc[0, 'formulation_base']
+    save_type = col_schema_df.loc[0, 'save_type']
+    save_loc = col_schema_df.loc[0, 'save_loc']
+
     if formulation_id == None:
-        # Create formulation_id as a combination of formulation_base and other elements
-        formulation_id = '_'.join(list(filter(None,[formulation_base, '_v',col_schema_df['formulation_ver'].iloc[0],'_',col_schema_df['dataset_name']]))) 
+        # Create formulation_id as a combination of formulation_base and 
+        # other elements
+        formulation_id = '_'.join(
+            list(
+                filter(
+                    None,
+                    [
+                        formulation_base,
+                        '_v',
+                        col_schema_df.loc[0, 'formulation_ver'], 
+                        '_',
+                        col_schema_df['dataset_name']
+                    ]
+                )
+            )
+        ) 
     
     # Create the unique filename corresponding to a dataset & formulation
     uniq_filename = f'{dataset_name}_{formulation_id}'
@@ -279,7 +353,11 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
     # TODO add cloud or local saving
     if save_loc == 'local':
          # Optionally creates dir structure  if save_type == 'csv' or 'parquet'
-        _save_dir_base, _other_save_dirs = _save_dir_struct(dir_save, dataset_name, save_type)
+        _save_dir_base, _other_save_dirs = _save_dir_struct(
+                                                        dir_save, 
+                                                        dataset_name, 
+                                                        save_type
+                                                        )
     elif save_loc == 'aws':
         print("TODO ensure connect credentials here")
         # TODO define _save_dir_base here in case .csv are desired in cloud
@@ -291,26 +369,39 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
     ds = df.to_xarray()
     ds.attrs = col_schema_df.fillna('').to_dict('index')[0]
     
-    # TODO query a database for the lat/lon corresponding to the gage-id if lat/lon not already provided
+    # TODO query a database for the lat/lon corresponding to the gage-id if 
+    # lat/lon not already provided
 
     # Save the standardized dataset
     if save_type == 'csv' or save_type == 'parquet':
         if len(_other_save_dirs) == 0:
-            raise ValueError('Expected _save_dir_struct to generate values in _other_save_dirs')
+            raise ValueError(
+                'Expected _save_dir_struct to generate values in _other_save_dirs'
+                )
 
         # TODO allow output write to a variety of locations (e.g. local/cloud)
         # Write data in long format
-        save_path_eval_metr = Path(_other_save_dirs['eval_metr'] / f'{uniq_filename}.csv') 
+        save_path_eval_metr = Path(
+            _other_save_dirs['eval_metr'] / f'{uniq_filename}.csv'
+            )
+             
         if save_type == 'csv':
             df.to_csv(save_path_eval_metr)
         else:
-            df.to_parquet(Path(str(save_path_eval_metr).replace('.csv','.parquet')))
-        # Write metadata table corresponding to these metric data table(s) (e.g. startDate, endDate)
-        save_path_meta = Path(_other_save_dirs['meta'] / f'{uniq_filename}_metadata.csv')
+            df.to_parquet(
+                Path(str(save_path_eval_metr).replace('.csv','.parquet'))
+                )
+        # Write metadata table corresponding to these metric data table(s) 
+        # (e.g. startDate, endDate)
+        save_path_meta = Path(
+            _other_save_dirs['meta'] / f'{uniq_filename}_metadata.csv'
+            )
         if save_type == 'csv':
             col_schema_df.to_csv(save_path_meta)
         else:
-            col_schema_df.to_parquet(Path(str(save_path_meta).replace('.csv','.parquet')))
+            col_schema_df.to_parquet(
+                Path(str(save_path_meta).replace('.csv','.parquet'))
+                )
         print(f"Saved files within a sub-directory structure inside {dir_save}")
     elif save_type == 'netcdf':
         save_path_nc = Path(_save_dir_base/Path(f'{uniq_filename}.nc'))
@@ -319,7 +410,8 @@ def proc_col_schema(df: pd.DataFrame, col_schema_df: pd.DataFrame, dir_save: str
     elif save_type == 'zarr':
         save_path_zarr = Path(_save_dir_base/Path(f'{uniq_filename}_zarr'))
         if os.path.exists(save_path_zarr):
-            shutil.rmtree(save_path_zarr) # Delete any pre-existing zarr data in the same directory
+            shutil.rmtree(save_path_zarr) # Delete any pre-existing zarr data with the same name
+                                            # (BChoat-THIS MAY BE RISKY)
         ds.to_zarr(save_path_zarr)   # Re-write to directory
         print(f"Saved zarr files inside {save_path_zarr}")
     return ds # Returning not intended use case, but it's an option

@@ -13,13 +13,13 @@ setup(
     author_email="guy.litt@noaa.gov",
     description="A simple package for processing data in the formulation selection decision support tool",
     packages=find_packages(),
-    install_requires=[
+    install_requires=[ 
         'pandas',
         'pyyaml',
         'wheel',
         'xarray',
         'zarr'
-    ]
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

@@ -35,8 +35,9 @@ Retr_Params <- list(paths = list(dir_hydfab=dir_hydfab,
                                  dir_db_attrs=dir_db_attrs,
                                  s3_path_hydatl = s3_path_hydatl),
                     vars = list(usgs_vars = usgs_vars,
-                                ha_vars = ha_vars)
-)
+                                ha_vars = ha_vars),
+                    dataset = 'xssa'
+                    )
 # ---------------------------------------------------------------------------- #
 #                              UNIT TESTING
 # ---------------------------------------------------------------------------- #
@@ -46,7 +47,7 @@ testthat::test_that("proc_attr_std_hfsub_name standardized name generator", {
 
 })
 
-testthat::test_that('',{
+testthat::test_that('proc_attr_gageids',{
 
 
 

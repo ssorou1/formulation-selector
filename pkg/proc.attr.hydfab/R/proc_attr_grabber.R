@@ -383,11 +383,12 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
 
 proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
                               lyrs="network",overwrite=FALSE){
-  #' @title Process catchment attributes based on gage ids.
+  #' @title Process catchment attributes based on vector of gage ids.
   #' @description
-  #' Prepares inputs for main processing step in iterating over each location
-  #' and grabbing catchment attribute data corresponding to the gage_id
-  #' location. Acquires user-requested variables from multiple sources. Writes all
+  #' Prepares inputs for main processing step. Iterates over each location
+  #' for grabbing catchment attribute data corresponding to the gage_id
+  #' location. Acquires user-requested variables from multiple catchment
+  #' attribute sources. Calls \code{\link{proc_attr_wrap}} which writes all
   #' acquired variables to a parquet file as a standard data.table format.
   #' Returns a list of comids that corresponded to the gage_ids
   #' @param gage_ids array of gage_id values to be queried for catchment attributes

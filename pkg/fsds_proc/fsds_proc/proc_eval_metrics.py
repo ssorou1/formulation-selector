@@ -215,7 +215,7 @@ def _proc_check_std_fsds_ids(vars: list, category=['metric','target_var'][0]):
         allowable_vars = ",".join(sub_std_config['var'])
         raise ValueError(f'The following {category} mappings defined in the'
                             ' dataset schema do not correspond to the'
-                            f' standardized {category} names: \n
+                            f' standardized {category} names:'
                             f' {", ".join(bad_vars)} \n Allowable'
                             f' variables include: {allowable_vars}')
     else:

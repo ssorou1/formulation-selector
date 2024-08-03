@@ -8,6 +8,13 @@
 *.so
 _site/
 
+# Credentials #
+##############
+credentials.json
+token.json
+client_secrets.json
+creds.json
+
 # Packages #
 ############
 # it's better to unpack these files and commit the raw source
@@ -88,6 +95,10 @@ htmlcov/
 nosetests.xml
 coverage.xml
 
+#  R  #
+#######
+*.Rproj
+
 # Front-End #
 #############
 node_modules/
@@ -95,3 +106,4 @@ bower_components/
 .grunt/
 src/vendor/
 dist/
+.Rproj.user

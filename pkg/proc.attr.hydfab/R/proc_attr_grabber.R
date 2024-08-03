@@ -132,12 +132,20 @@ proc_attr_hydatl <- function(hf_id, s3_path, ha_vars, local_path=NA){
   #   hf_id <- as.numeric(hf_id)
   # }
 
+
+
   # TODO check for local hydroatlas dataset before proceeding with s3 connection
   if(!base::is.na(local_path)){
     stop(paste0("The following path does not exist for saving hydroatlas
                    data:\n",local_path))
 
   } else {
+    bucket <- try(arrow::s3_bucket(s3_path))
+    if('try-error' %in% base::class(bucket)){
+      stop(glue::glue("Could not connect to an s3 bucket path for hydroatlas
+                      data retrieval. Reconsider the s3_path of {s3_path}"))
+    }
+
     ha <- arrow::open_dataset(s3_path) %>%
       dplyr::filter(hf_id %in% !!hf_id) %>%
       dplyr::select("hf_id", any_of(ha_vars)) %>%
@@ -328,7 +336,8 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
 
   # --------------- dataset grabber ---------------- #
   attr_data <- list()
-  if ('ha_vars' %in% base::names(need_vars)){
+  if (('ha_vars' %in% base::names(need_vars)) &&
+      (base::all(!base::is.na(need_vars$ha_vars)))){
     # Hydroatlas variable query; list name formatted as {dataset_name}__v{version_number}
     attr_data[['hydroatlas__v1']] <- proc.attr.hydfab::proc_attr_hydatl(s3_path=Retr_Params$paths$s3_path_hydatl,
                                           hf_id=net$hf_id,
@@ -336,14 +345,15 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
                                 # ensures 'COMID' exists as colname
                                 dplyr::rename("COMID" = "hf_id")
   }
-  if (base::any(base::grepl("usgs_vars", base::names(need_vars)))){
+  if( (base::any(base::grepl("usgs_vars", base::names(need_vars)))) &&
+      (base::all(!base::is.na(need_vars$usgs_vars))) ){
     # USGS nhdplusv2 query; list name formatted as {dataset_name}__v{version_number}
     attr_data[['usgs_nhdplus__v2']] <- proc.attr.hydfab::proc_attr_usgs_nhd(comid=net$hf_id,
                                                                 usgs_vars=need_vars$usgs_vars)
   }
   ########## May add more data sources here and append to attr_data ###########
   # ----------- dataset standardization ------------ #
-  if (!base::all(base::unlist((
+  if (!base::all(base::unlist(( # A qa/qc check
           base::lapply(attr_data, function(x)
                   base::any(base::grepl("COMID", colnames(x)))))))){
     stop("Expecting 'COMID' as a column name identifier in every dataset")
@@ -511,7 +521,7 @@ proc_attr_read_gage_ids_fsds <- function(dir_dataset, ds_filenames=''){
 }
 
 grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=FALSE){
-  #' @title Grab catchment attributes from processes FSDS input
+  #' @title Grab catchment attributes from processed FSDS input
   #' @description Wrapper function that acquires catchment attribute data from
   #' FSDS processed input generated via \pkg{fsds_proc} package
   #' @param Retr_Params list of parameters built for grabbing catchment attribute data. List objects include the following:

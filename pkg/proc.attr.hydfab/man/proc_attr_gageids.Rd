@@ -2,7 +2,7 @@
 % Please edit documentation in R/proc_attr_grabber.R
 \name{proc_attr_gageids}
 \alias{proc_attr_gageids}
-\title{Process catchment attributes based on gage ids.}
+\title{Process catchment attributes based on vector of gage ids.}
 \usage{
 proc_attr_gageids(
   gage_ids,
@@ -42,9 +42,10 @@ needed to acquire variables of interest. List objects include the following:
 \item{overwrite}{boolean. Should the hydrofabric cloud data acquisition be redone and overwrite any local files? Default FALSE.}
 }
 \description{
-Prepares inputs for main processing step in iterating over each location
-and grabbing catchment attribute data corresponding to the gage_id
-location. Acquires user-requested variables from multiple sources. Writes all
+Prepares inputs for main processing step. Iterates over each location
+for grabbing catchment attribute data corresponding to the gage_id
+location. Acquires user-requested variables from multiple catchment
+attribute sources. Calls \code{\link{proc_attr_wrap}} which writes all
 acquired variables to a parquet file as a standard data.table format.
 Returns a list of comids that corresponded to the gage_ids
 }

@@ -23,7 +23,7 @@ if ('bolotin' %in% Sys.getenv("HOME")) {
 } else { # assume this is the path to the fsds dir
   fsds_dir <- file.path(Sys.getenv("HOME"),"git","fsds")
 }
-# Run unit tests? 
+# Run unit tests?
 RunTest <- FALSE#TRUE Default FALSE prevents s3 data downloading in unit testing (FALSE=fast)
 ShowTestCovr <- TRUE # Only possible if RunTest==TRUE. Even slower though.
 # ---------------------------------------------------------------------------- #
@@ -31,16 +31,16 @@ ShowTestCovr <- TRUE # Only possible if RunTest==TRUE. Even slower though.
 namePack <- c("proc.attr.hydfab")
 
 for(pack in namePack){
-  
+
   pkg_dir <- file.path(fsds_dir,"pkg") # Note that CRAN does not allow '_' in package names, hence the '.'
   if (!dir.exists(pkg_dir)){
     stop(paste0("reconsider the path to ",pkg_dir))
   }
-  
+
   pack_dir <- file.path(pkg_dir, pack)
   # Test if package name exists, if so don't re-create (just update) it
   # Create package
-  if (!file.exists(file.path(pack_dir,"NAMESPACE"))){ 
+  if (!file.exists(file.path(pack_dir,"NAMESPACE"))){
     library(usethis)
     # This only happens once when an initial R package is created & is here for future reference
     # Create the initial package framework (should only be run once)
@@ -48,23 +48,23 @@ for(pack in namePack){
     setwd(pkg_dir) # testthat setup needs working dir to be the package
     usethis::use_testthat() # setup testthat unit testing
   }
-  
-  
+
+
   setwd(pack_dir)
-  
+
   # Create Roxygen documentation:
   devtools::document()
-  
+
   # remove any existing version of package in the library location
   try(remove.packages(pack))
   #unloadNamespace("proc.attr.hydfab")
-  
+
   # Install the package
   setwd(pkg_dir)
   devtools::install(pack)
   detach(paste0("package:", pack), unload=TRUE, character.only = TRUE)
   library(paste0(pack), character.only = TRUE)
-  
+
   # Run unit tests
   if(RunTest==TRUE){
     setwd(pack_dir)

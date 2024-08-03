@@ -53,6 +53,7 @@ s3_path_hydatl <- glue::glue('{s3_base}/hydroATLAS/hydroatlas_vars.parquet') # p
 hf_cat_sel <- c("total","all")[1] # total: interested in the single location's aggregated catchment data; all: all subcatchments of interest
 ext <- 'gpkg'
 attr_sources <- c("hydroatlas","usgs") # "streamcat",
+# TODO communicate to user that these are standardized variable names
 ha_vars <- c('pet_mm_s01', 'cly_pc_sav', 'cly_pc_uav') # hydroatlas variables
 sc_vars <- c() # TODO look up variables. May need to select datasets first
 usgs_vars <- c('TOT_TWI','TOT_PRSNOW','TOT_POPDENS90','TOT_EWT','TOT_RECHG') # list of variables retrievable using nhdplusTools::get_characteristics_metadata()

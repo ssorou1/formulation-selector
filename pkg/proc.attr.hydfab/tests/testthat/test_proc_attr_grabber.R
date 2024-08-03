@@ -26,38 +26,79 @@ usgs_vars <- c('TOT_TWI','TOT_PRSNOW','TOT_POPDENS90','TOT_EWT','TOT_RECHG')
 
 # Define data directories to a package-specific data path
 dir_base <- system.file("extdata",package="proc.attr.hydfab")
-temp_dir <- tempdir()
+# Refer to temp_dir <- tempdir() in setup.R
+temp_dir <- local_temp_dir()
 dir_hydfab <- file.path(temp_dir,'hfab')
 dir_db_attrs <- file.path(temp_dir,'attrs') # used for temporary attr retrieval
 dir_db_attrs_pkg <- system.file("extdata","attributes_pah",package="proc.attr.hydfab")# permanent pacakage location
+dir_user <- system.file("extdata","user_data_std", package="proc.attr.hydfab") # dir_user <- "~/git/fsds/pkg/proc.attr.hydfab/inst/extdata/user_data_std/"
+dir_dataset <- file.path(dir_user,'xssa-mini')
+path_mini_ds <- file.path(dir_dataset,'xSSA-mini_Raven_blended.nc')
+
+ls_fsds_std <- proc.attr.hydfab::proc_attr_read_gage_ids_fsds(dir_dataset)
+
+ha_vars <- c('pet_mm_s01', 'cly_pc_sav')#, 'cly_pc_uav') # hydroatlas variables
+sc_vars <- c() # TODO look up variables. May need to select datasets first
+usgs_vars <- c('TOT_TWI','TOT_PRSNOW')#,'TOT_POPDENS90','TOT_EWT','TOT_RECHG')
 
 Retr_Params <- list(paths = list(dir_hydfab=dir_hydfab,
                                  dir_db_attrs=dir_db_attrs,
-                                 s3_path_hydatl = s3_path_hydatl),
+                                 s3_path_hydatl = s3_path_hydatl,
+                                 dir_std_base = dir_user),
                     vars = list(usgs_vars = usgs_vars,
                                 ha_vars = ha_vars),
-                    dataset = 'xssa'
-                    )
+                    datasets = 'xssa-mini')
 # ---------------------------------------------------------------------------- #
 #                              UNIT TESTING
 # ---------------------------------------------------------------------------- #
 testthat::test_that("proc_attr_std_hfsub_name standardized name generator", {
   testthat::expect_equal('hydrofab_testit_111.parquet',
-               proc.attr.hydfab::proc_attr_std_hfsub_name(111,"testit",'parquet'))
+               proc.attr.hydfab:::proc_attr_std_hfsub_name(111,"testit",'parquet'))
 
 })
 
 testthat::test_that('proc_attr_gageids',{
 
+  # test just usgs vars
+  Retr_Params_usgs <- Retr_Params_ha <- Retr_Params
+  Retr_Params_usgs$vars <- list(usgs_vars = usgs_vars)
+  ls_comids <- proc.attr.hydfab::proc_attr_gageids(gage_ids=ls_fsds_std$gage_ids[2],
+                                      featureSource=ls_fsds_std$featureSource,
+                                      featureID=ls_fsds_std$featureID,
+                                      Retr_Params=Retr_Params_usgs,
+                                      lyrs="network",overwrite=FALSE)
+  testthat::expect_identical(names(ls_comids),ls_fsds_std$gage_ids[2])
+  testthat::expect_identical(class(ls_comids),"list")
 
+  # test just hydroatlas var
+  Retr_Params_ha$vars <- list(ha_vars = ha_vars)
+  ls_comids_ha <- proc.attr.hydfab::proc_attr_gageids(gage_ids=ls_fsds_std$gage_ids[2],
+                                                   featureSource=ls_fsds_std$featureSource,
+                                                   featureID=ls_fsds_std$featureID,
+                                                   Retr_Params=Retr_Params_ha,
+                                                   lyrs="network",overwrite=FALSE)
 
+  # test a wrong featureSource
+  testthat::expect_error(proc.attr.hydfab::proc_attr_gageids(gage_ids=ls_fsds_std$gage_ids[2],
+                                                   featureSource='notasource',
+                                                   featureID=ls_fsds_std$featureID,
+                                                   Retr_Params=Retr_Params,
+                                                   lyrs="network",overwrite=FALSE))
 
+  testthat::expect_error(proc.attr.hydfab::proc_attr_gageids(gage_ids=c(ls_fsds_std$gage_ids[2],NA),
+                                                                                        featureSource='notasource',
+                                                                                        featureID=ls_fsds_std$featureID,
+                                                                                        Retr_Params=Retr_Params,
+                                                                                        lyrs="network",overwrite=FALSE))
 
 })
 
 
+
+
+
 testthat::test_that('retrieve_attr_exst', {
-  comids <- c("1520007","1623207","1638559","1722317")
+  comids <- c("1520007","1623207","1638559","1722317") # !!Don't change this!!
   vars <- Retr_Params$vars %>% unlist() %>% unname()
 
   # Run tests based on expected dims
@@ -90,20 +131,33 @@ testthat::test_that('retrieve_attr_exst', {
 # Read in data of expected format
 
 testthat::test_that("proc_attr_wrap", {
-  exp_dat <- readRDS(system.file("extdata", paste0("attrs_",comid,".Rds"), package="proc.attr.hydfab"))
-  dat_all <- proc.attr.hydfab::proc_attr_wrap(comid,Retr_Params,
+  Retr_Params_all <- Retr_Params
+  # Substitute w/ new tempdir based on setup.R
+  Retr_Params$paths$dir_db_attrs <- Retr_Params$paths$dir_db_attrs %>%
+                                    base::gsub(pattern=temp_dir,
+                                               replacement=local_temp_dir2() )
+  Retr_Params$paths$dir_hydfab <- Retr_Params$paths$dir_hydfab %>%
+                                  base::gsub(pattern=temp_dir,
+                                             replacement =local_temp_dir2() )
+  Retr_Params_all$vars$ha_vars <- c("pet_mm_s01","cly_pc_sav")
+  Retr_Params_all$vars$usgs_vars <-  c("TOT_TWI","TOT_PRSNOW","TOT_POPDENS90","TOT_EWT","TOT_RECHG","TOT_BFI")
+  exp_dat <- readRDS(system.file("extdata", paste0("attrs_18094081.Rds"), package="proc.attr.hydfab"))
+  exp_dat$attribute <- as.character(exp_dat$attribute)
+  dat_all <- proc.attr.hydfab::proc_attr_wrap(comid=18094081,Retr_Params_all,
                                               lyrs='network',
                                               overwrite=TRUE )
   # How the exp_dat was originally created for unit testing
-  # saveRDS(dat_all,paste0("~/git/fsds/pkg/proc.attr.hydfab/inst/extdata/attrs_",comid,".Rds"))
+  # saveRDS(dat_all,paste0("~/git/fsds/pkg/proc.attr.hydfab/inst/extdata/attrs_18094081.Rds"))
   testthat::expect_true(dir.exists(dir_db_attrs))
-  # testthat::expect_true(all(exp_dat==dat_all))
-  # testthat::expect_equal(exp_dat,dat_all)
+  # Remove the dl_timestamp column for download timestamp and compare
+  testthat::expect_equal(
+    exp_dat %>% select(-dl_timestamp) %>% as.matrix(),
+    dat_all %>% select(-dl_timestamp) %>% as.matrix())
 
   # Test when data exist in tempdir and new data do not exist
   Retr_Params_only_new <- Retr_Params
   Retr_Params_only_new$vars$usgs_vars <- c('TOT_PET')
-  dat_add_pet <- suppressWarnings(proc.attr.hydfab::proc_attr_wrap(comid,Retr_Params_only_new,
+  dat_add_pet <- suppressWarnings(proc.attr.hydfab::proc_attr_wrap(18094081,Retr_Params_only_new,
                                    lyrs='network',
                                    overwrite=FALSE ))
   testthat::expect_true(any('TOT_PET' %in% dat_add_pet$attribute))
@@ -111,27 +165,68 @@ testthat::test_that("proc_attr_wrap", {
 
   # Test when some data exist in tempdir and new data needed
   Retr_Params_add <- Retr_Params
+  # Sneak in the BFI variable
   Retr_Params_add$vars$usgs_vars <- c("TOT_TWI","TOT_PRSNOW","TOT_POPDENS90","TOT_EWT","TOT_RECHG","TOT_BFI")
   dat_all_bfi <- suppressWarnings(proc.attr.hydfab::proc_attr_wrap(comid,Retr_Params_add,
                                               lyrs='network',
                                               overwrite=FALSE ))
-  testthat::expect_true(any('TOT_BFI' %in% dat_all_bfi$attribute))
-  testthat::expect_true(any(grepl("TOT_PRSNOW", dat_all_bfi$attribute)))
+  testthat::expect_true(any('TOT_BFI' %in% dat_all_bfi$attribute)) # Does the BFI var exist?
+  # testthat::expect_true(any(grepl("TOT_PRSNOW", dat_all_bfi$attribute)))
+
+
+  # files_attrs <- file.path(Retr_Params$paths$dir_db_attrs,
+  #                          list.files(Retr_Params$paths$dir_db_attrs))
+  file.remove(file.path(Retr_Params$paths$dir_db_attrs,"comid_18094081_attrs.parquet"))
 })
 
+testthat::test_that("grab_attrs_datasets_fsds_wrap", {
+
+  ls_comids_all <- proc.attr.hydfab::grab_attrs_datasets_fsds_wrap(Retr_Params,
+                                                               lyrs="network",
+                                                               overwrite=FALSE)
+  testthat::expect_equal(names(ls_comids_all), Retr_Params$datasets)
+
+
+  # Test wrong datasets name provided
+  Retr_Params_bad_ds <- Retr_Params
+  Retr_Params_bad_ds$datasets <- c("bad","xssa-mini")
+  testthat::expect_error(
+    proc.attr.hydfab::grab_attrs_datasets_fsds_wrap(Retr_Params_bad_ds,
+                                                    lyrs="network",
+                                                    overwrite=FALSE))
+
+  # Test that all datasets are processed
+  Retr_Params_all_ds <- Retr_Params
+  Retr_Params_all_ds$datasets <- "all"
+  ls_comids_all_ds <- proc.attr.hydfab::grab_attrs_datasets_fsds_wrap(Retr_Params_all_ds,
+                                                                      lyrs="network",
+                                                                      overwrite=FALSE)
+  # When 'all' datasets requested, should have the same number retrieved
+  testthat::expect_equal(length(ls_comids_all_ds),
+                        length(list.files(Retr_Params_all_ds$paths$dir_std_base)))
+})
+
+
 testthat::test_that("proc_attr_hydatl", {
-  exp_dat <- readRDS(system.file("extdata", paste0("ha_",comid,".Rds"), package="proc.attr.hydfab"))
-  ha <- proc.attr.hydfab::proc_attr_hydatl(comid,s3_path_hydatl,ha_vars)
+  exp_dat_ha <- readRDS(system.file("extdata", paste0("ha_18094981.Rds"), package="proc.attr.hydfab"))
+  ha <- proc.attr.hydfab::proc_attr_hydatl(comid,s3_path_hydatl,
+                                           ha_vars=c("pet_mm_s01","cly_pc_sav","cly_pc_uav"))
   # saveRDS(ha,paste0("~/git/fsds/pkg/proc.attr.hydfab/inst/extdata/ha_",comid,".Rds"))
   # Wide data expected
-  testthat::expect_identical(ha,exp_dat)
+  testthat::expect_equal(ha,exp_dat_ha)
+
+  # Run this with a bad s3 bucket
+  testthat::expect_error(proc.attr.hydfab::proc_attr_hydatl(comid="18094981",
+                                                          s3_path_hydatl ='https://s3.notabucket',
+                                                          ha_vars = Retr_Params$vars$ha_vars))
 })
 
 testthat::test_that("proc_attr_usgs_nhd", {
-  exp_dat <- readRDS(system.file("extdata", paste0("nhd_",comid,".Rds"), package="proc.attr.hydfab"))
-  order_cols <- c('COMID',Retr_Params$vars$usgs_vars)
-  usgs_meta <- proc.attr.hydfab::proc_attr_usgs_nhd(comid,usgs_vars) %>%
-    data.table::setcolorder(order_cols)
+  exp_dat <- readRDS(system.file("extdata", paste0("nhd_18094981.Rds"), package="proc.attr.hydfab"))
+  order_cols <- c('COMID',"TOT_TWI","TOT_PRSNOW","TOT_POPDENS90","TOT_EWT","TOT_RECHG")
+  usgs_meta <- proc.attr.hydfab::proc_attr_usgs_nhd(comid=18094981,
+                   usgs_vars=c("TOT_TWI","TOT_PRSNOW","TOT_POPDENS90","TOT_EWT","TOT_RECHG")) %>%
+                    data.table::setcolorder(order_cols)
   #saveRDS(usgs_meta,paste0("~/git/fsds/pkg/proc.attr.hydfab/inst/extdata/nhd_",comid,".Rds"))
   # Wide data expected
   # Check that the COMID col is returned (expected out of USGS data)

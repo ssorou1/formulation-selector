@@ -2,7 +2,7 @@
 % Please edit documentation in R/proc_attr_grabber.R
 \name{grab_attrs_datasets_fsds_wrap}
 \alias{grab_attrs_datasets_fsds_wrap}
-\title{Grab catchment attributes from processes FSDS input}
+\title{Grab catchment attributes from processed FSDS input}
 \usage{
 grab_attrs_datasets_fsds_wrap(Retr_Params, lyrs = "network", overwrite = FALSE)
 }

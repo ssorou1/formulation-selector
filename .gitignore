@@ -98,6 +98,7 @@ coverage.xml
 #  R  #
 #######
 *.Rproj
+*.Rhistory
 
 # Front-End #
 #############

@@ -511,6 +511,8 @@ proc_attr_read_gage_ids_fsds <- function(dir_dataset, ds_filenames=''){
     featureSource <- attrs$featureSource
     featureID <- attrs$featureID # intended to reformat gage_id into the appropriate nldi format using glue(e.g. glue('USGS-{gage_id}')
   } else {
+    print(paste0("The following contents inside \n",dir_ds,
+                 "\n do not match expected format:\n", paste0(fns, collapse = ", ")))
     stop("Create a different file format reader here that generates everything in the return list.")
     # TODO make this more adaptable so that it doesn't depend on running python fsds_proc beforehand
     # Idea: e.g. read in user-defined gage_id data as a .csv

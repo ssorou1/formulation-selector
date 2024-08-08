@@ -471,6 +471,36 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
   return(ls_comid)
 }
 
+read_loc_data <- function(loc_id_filepath, loc_id){
+  #' @title Read location identifiers
+  #' @description Reads directly from a csv or arrow-compatible dataset.
+  #' Returns the dataset's column identifer renamed as 'gage_id' in a tibble
+  #' @param loc_id_filepath csv filepath or dataset filepath/directory.
+  #' @param loc_id The column name of the identifier column
+  #' @seealso [proc_attr_read_gage_ids_fsds()]
+  #' @seealso [proc_attr_wrap()]
+  #' @export
+  # Changelog / contributions
+  #. 2024-08-08 Originally created
+  if (base::grepl('csv', tools::file_ext(loc_id_filepath))){
+    if (!base::file.exists(loc_id_filepath)){
+      stop(glue::glue("The filepath does not exist:
+    \n{loc_id_filepath}
+    \nTry a different path inside the config file's loc_id_filepath."))
+    }
+    dat_loc <- arrow::open_csv_dataset(loc_id_filepath) %>%
+      dplyr::select(dplyr::all_of(loc_id)) %>% dplyr::collect() %>%
+      dplyr::rename('gage_id' = loc_id)
+  } else if (!base::is.null(loc_id_filepath)){
+    dat_loc <- arrow::open_dataset(loc_id_filepath) %>%
+      dplyr::select(dplyr::all_of(loc_id)) %>% dplyr::collect() %>%
+      dplyr::rename('gage_id' = loc_id)
+  } else {
+    base::message("No location dataset defined")
+  }
+  return(dat_loc)
+}
+
 proc_attr_read_gage_ids_fsds <- function(dir_dataset, ds_filenames=''){
   #' @title Read in standardized FSDS gage_id location identifiers
   #' @description Reads output generated using \pkg{fsds_proc} python package and
@@ -581,5 +611,24 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
                                                      overwrite=overwrite)
     ls_comids_all[[dataset_name]] <- ls_comids
   }
+
+  # ------------ Grab attributes from a separate loc_id file ----------------- #
+  # Generate list of identifiers
+  dat_loc <- read_loc_data(Retr_Params$loc_id_read$loc_id_filepath,
+                           Retr_Params$loc_id_read$loc_id)
+
+  if(base::nrow(dat_loc)>0){
+    # TODO bugfix this here
+    ls_comids_loc <- proc.attr.hydfab::proc_attr_gageids(gage_ids=dat_loc,
+                                                         featureSource=Retr_Params$loc_id_read$featureSource_loc,
+                                                         featureID=Retr_Params$loc_id_read$featureID_loc,
+                                                         Retr_Params,
+                                                         lyrs=lyrs,
+                                                         overwrite=overwrite)
+  } else {
+    # TODO add check that user didn't provide parameter expecting to read data
+  }
+
+
   return(ls_comids_all)
 }

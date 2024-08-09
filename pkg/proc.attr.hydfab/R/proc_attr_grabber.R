@@ -493,8 +493,9 @@ read_loc_data <- function(loc_id_filepath, loc_id, fmt = 'csv'){
     cols <- arrow::open_dataset(loc_id_filepath, format = fmt) %>% base::colnames()
     # assign every col as a character string because leading zeros risk being dropped
     schema <- arrow::schema(!!!setNames(rep(list(arrow::string()), length(cols)), cols))
-    # Read in just the loc_id column and rename to the standardized 'gage_id'.
-    dat_loc <- arrow::open_dataset(loc_id_filepath,format = fmt, schema=schema) %>%
+    # Read in dataset
+    dat_loc <- arrow::open_dataset(loc_id_filepath,format = fmt,
+                                   col_types=schema) %>%
       dplyr::select(dplyr::all_of(loc_id)) %>% dplyr::collect() %>%
       dplyr::rename('gage_id' = loc_id)
   } else {

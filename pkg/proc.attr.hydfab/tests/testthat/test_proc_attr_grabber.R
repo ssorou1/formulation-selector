@@ -55,6 +55,22 @@ testthat::test_that("proc_attr_std_hfsub_name standardized name generator", {
 
 })
 
+testthat::test_that("read_loc_data",{
+  # Read in the normal gage
+  good_file <- file.path(dir_base,"gage_id_example.csv")
+  gage_dat <- proc.attr.hydfab::read_loc_data(loc_id_filepath = good_file,loc_id = 'gage_id',fmt='csv')
+  testthat::expect_equal(ncol(gage_dat),1)
+  testthat::expect_equal(colnames(gage_dat), 'gage_id')
+  testthat::expect_true('character' %in% class(gage_dat$gage_id))
+  testthat::expect_true(base::substring(gage_dat$gage_id[1],1,1)== "0")
+
+  bad_file <- file.path(dir_base,"gage_id_ex_bad.parquet")
+  bad_dat <- proc.attr.hydfab::read_loc_data(loc_id_filepath = bad_file,loc_id = 'gage_id', fmt = 'parquet')
+  testthat::expect_true(base::substring(
+    base::as.character(bad_dat$gage_id[1]),1,1)!="0")
+
+})
+
 testthat::test_that('proc_attr_gageids',{
 
   # test just usgs vars

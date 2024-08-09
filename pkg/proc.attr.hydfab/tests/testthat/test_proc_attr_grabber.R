@@ -2,10 +2,8 @@
 #' @description Unit testing for catchment attribute grabbing via the hydrofabric
 #' @author Guy Litt \email{guy.litt@noaa.gov}
 
-
 # Changelog / Contributions
 #   2024-07-24 Originally created, GL
-
 
 # unloadNamespace("proc.attr.hydfab")
 suppressPackageStartupMessages(library(proc.attr.hydfab,quietly=TRUE))

@@ -474,32 +474,32 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
   return(ls_comid)
 }
 
-read_loc_data <- function(loc_id_filepath, loc_id){
+read_loc_data <- function(loc_id_filepath, loc_id, fmt = 'csv'){
   #' @title Read location identifiers
   #' @description Reads directly from a csv or arrow-compatible dataset.
   #' Returns the dataset's column identifer renamed as 'gage_id' in a tibble
   #' @param loc_id_filepath csv filepath or dataset filepath/directory.
   #' @param loc_id The column name of the identifier column
+  #' @param fmt The format passed to arrow::open_dataset() in the non-csv case.
+  #' Default 'csv'. May also be 'parquet', 'arrow', 'feather', 'zarr', etc.
   #' @seealso [proc_attr_read_gage_ids_fsds()]
   #' @seealso [proc_attr_wrap()]
   #' @export
   # Changelog / contributions
-  #. 2024-08-08 Originally created
-  if (base::grepl('csv', tools::file_ext(loc_id_filepath))){
-    if (!base::file.exists(loc_id_filepath)){
-      stop(glue::glue("The filepath does not exist:
-    \n{loc_id_filepath}
-    \nTry a different path inside the config file's loc_id_filepath."))
-    }
-    dat_loc <- arrow::open_csv_dataset(loc_id_filepath) %>%
-      dplyr::select(dplyr::all_of(loc_id)) %>% dplyr::collect() %>%
-      dplyr::rename('gage_id' = loc_id)
-  } else if (!base::is.null(loc_id_filepath)){
-    dat_loc <- arrow::open_dataset(loc_id_filepath) %>%
+  #  2024-08-09 Originally created
+
+  if (!base::is.null(loc_id_filepath)){
+    # Figure out the colnames of everything in the dataset.
+    cols <- arrow::open_dataset(loc_id_filepath, format = fmt) %>% base::colnames()
+    # assign every col as a character string because leading zeros risk being dropped
+    schema <- arrow::schema(!!!setNames(rep(list(arrow::string()), length(cols)), cols))
+    # Read in just the loc_id column and rename to the standardized 'gage_id'.
+    dat_loc <- arrow::open_dataset(loc_id_filepath,format = fmt, schema=schema) %>%
       dplyr::select(dplyr::all_of(loc_id)) %>% dplyr::collect() %>%
       dplyr::rename('gage_id' = loc_id)
   } else {
-    base::message("No location dataset defined")
+    base::message(glue::glue("No location dataset defined. Reconsider designation for \n {loc_id_filepath}."))
+    dat_loc <- NULL
   }
   return(dat_loc)
 }
@@ -617,13 +617,13 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
 
   # ------------ Grab attributes from a separate loc_id file ----------------- #
   # Generate list of identifiers
-  dat_loc <- read_loc_data(Retr_Params$loc_id_read$loc_id_filepath,
+  dat_loc <- proc.attr.hydfab::read_loc_data(Retr_Params$loc_id_read$loc_id_filepath,
                            Retr_Params$loc_id_read$gage_id)
 
   if(base::nrow(dat_loc)>0){
     # TODO bugfix this here
     loc_id <- Retr_Params$loc_id_read$loc_id
-    ls_comids_loc <- proc.attr.hydfab::proc_attr_gageids(gage_ids=dat_loc[['gage_id']],
+    ls_comids_loc <- proc.attr.hydfab::proc_attr_gageids(gage_ids=as.array(dat_loc[['gage_id']]),
                                                          featureSource=Retr_Params$loc_id_read$featureSource_loc,
                                                          featureID=Retr_Params$loc_id_read$featureID_loc,
                                                          Retr_Params,

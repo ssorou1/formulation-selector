@@ -81,48 +81,12 @@ Retr_Params <- list(paths = list(# Note that if a path is provided, ensure the
                                ),
                    file_io = unlist(raw_config$file_io),
                    loc_id_read = list(
-                        loc_id = raw_config$loc_id_read[[1]]$loc_id,
+                        gage_id = raw_config$loc_id_read[[1]]$gage_id,
                         loc_id_filepath = glue::glue(raw_config$loc_id_read[[2]]$loc_id_filepath),
                         featureID_loc = raw_config$loc_id_read[[3]]$featureID_loc,
                         featureSource_loc = raw_config$loc_id_read[[4]]$featureSource_loc),
                    datasets = datasets
        )
-
-path_loc_ids <- "/Users/guylitt/noaa/regionalization/data/input/user_data_std/juliemai-xSSA/eval/metrics/juliemai-xSSA_Raven_blended.csv"
-
-loc_id_read <- Retr_Params$loc_id_read
-read_loc_data <- function(loc_id_filepath, loc_id){
-  #' @title Read location identifiers
-  #' @description Reads directly from a csv or arrow-compatible dataset.
-  #' Returns the dataset's column identifer renamed as 'gage_id' in a tibble
-  #' @param loc_id_filepath csv filepath or dataset filepath/directory.
-  #' @param loc_id The column name of the identifier column
-  #' @seealso [proc_attr_read_gage_ids_fsds()]
-  #' @seealso [proc_attr_wrap()]
-  #' @export
-  # Changelog / contributions
-  #. 2024-08-08 Originally created
-  if (base::grepl('csv', tools::file_ext(loc_id_filepath))){
-    if (!base::file.exists(loc_id_filepath)){
-      stop(glue::glue("The filepath does not exist:
-    \n{loc_id_filepath}
-    \nTry a different path inside the config file's loc_id_filepath."))
-    }
-    dat_loc <- arrow::open_csv_dataset(loc_id_filepath) %>%
-      dplyr::select(loc_id) %>% dplyr::collect() %>%
-      dplyr::rename('gage_id' = loc_id)
-  } else if (!base::is.null(loc_id_filepath)){
-    dat_loc <- arrow::open_dataset(loc_id_filepath) %>%
-      dplyr::select(loc_id) %>% dplyr::collect() %>%
-      dplyr::rename('gage_id' = loc_id)
-  } else {
-    base::message("No location dataset defined")
-  }
-  return(dat_loc)
-}
-loc_id_filepath <- loc_id_read[['loc_id_filepath']]
-loc_id <- loc_id_read[['loc_id']]
-
 
 ls_comids <- proc.attr.hydfab:::grab_attrs_datasets_fsds_wrap(Retr_Params)
 

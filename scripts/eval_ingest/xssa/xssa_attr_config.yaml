@@ -7,9 +7,9 @@ col_schema:   # required column mappings in the evaluation metrics dataset (if r
   - 'featureID': 'USGS-{gage_id}' # python f-string / R glue() format; converting the 'gage_id' to the standardized featureID used by nhdplusTools/hydrofabric. Must use '{gage_id}' e.g. 'USGS-{gage_id}'
   - 'featureSource': 'nwissite' # The standardized nhdplusTools featureSource. Possible featureSources might be 'nwissite', 'comid'.
 loc_id_read: # This section only required for locations NOT to be read in under a standardized dataset location (dir_std_base). May be used for additional prediction locations. MUST leave each item name inside list with empty assignments if no datasets desired.
-  - 'loc_id': 'gage_id' # expects tabular dataset with this column name representing the location id. Must be 1st item in this sublist.
+  - 'gage_id': 'gage_id' # expects tabular dataset with this column name representing the location id. Must be 1st item in this sublist.
   - 'loc_id_filepath': '{dir_std_base}/juliemai-xSSA/eval/metrics/juliemai-xSSA_Raven_blended.csv' #Filepath. Allows reading of .csv or a dataset accessible using arrow::open_datast(). Must be 2nd item in this sublist.
-  - 'featureID_loc' : 'USGS-{loc_id}' # python f-string / R glue() format; converting the 'loc_id' to the standardized featureID used by nhdplusTools/hydrofabric. Must use '{loc_id}' e.g. 'USGS-{loc_id}'. Must be 3rd item in this sublist.
+  - 'featureID_loc' : 'USGS-{gage_id}' # python f-string / R glue() format; converting the 'loc_id' to the standardized featureID used by nhdplusTools/hydrofabric. Must use '{loc_id}' e.g. 'USGS-{loc_id}'. Must be 3rd item in this sublist.
   - 'featureSource_loc': 'nwissite' # The standardized nhdplusTools featureSource. Must be 4th item in this sublist.
 file_io: # May define {home_dir} for python's '{home_dir}/string_path'.format(home_dir =str(Path.home())) functionality
   - 'dir_save': '{home_dir}/noaa/regionalization/data/input' #TODO determine if this needed.

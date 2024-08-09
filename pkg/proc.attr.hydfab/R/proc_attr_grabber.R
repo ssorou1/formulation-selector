@@ -445,20 +445,23 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
     # Retrieve the COMID
     # Reference: https://doi-usgs.github.io/nhdplusTools/articles/get_data_overview.html
     nldi_feat <- base::list(featureSource =featureSource,
-                            featureID = glue::glue(featureID) # This should expect {'gage_id'} as a variable!
+                            featureID = as.character(glue::glue(featureID)) # This should expect {'gage_id'} as a variable!
     )
     site_feature <- try(nhdplusTools::get_nldi_feature(nldi_feature = nldi_feat))
     if('try-error' %in% class(site_feature)){
       stop(glue::glue("The following nldi features didn't work. You may need to
              revisit the configuration yaml file that processes this dataset in
             fsds_proc: \n {featureSource}, and featureID={featureID}"))
+    } else if (!is.null(site_feature)){
+      comid <- site_feature['comid']$comid
+      ls_comid[[gage_id]] <- comid
+      # Retrieve the variables corresponding to datasets of interest & update database
+      loc_attrs <- proc.attr.hydfab::proc_attr_wrap(comid=comid,
+                                                    Retr_Params=Retr_Params,
+                                                    lyrs='network',overwrite=FALSE)
+    } else {
+      message(glue::glue("Skipping {gage_id}"))
     }
-    comid <- site_feature['comid']$comid
-    ls_comid[[gage_id]] <- comid
-    # Retrieve the variables corresponding to datasets of interest & update database
-    loc_attrs <- proc.attr.hydfab::proc_attr_wrap(comid=comid,
-                                                  Retr_Params=Retr_Params,
-                                                  lyrs='network',overwrite=FALSE)
   }
   just_comids <- ls_comid %>% unname() %>% unlist()
 
@@ -615,11 +618,12 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
   # ------------ Grab attributes from a separate loc_id file ----------------- #
   # Generate list of identifiers
   dat_loc <- read_loc_data(Retr_Params$loc_id_read$loc_id_filepath,
-                           Retr_Params$loc_id_read$loc_id)
+                           Retr_Params$loc_id_read$gage_id)
 
   if(base::nrow(dat_loc)>0){
     # TODO bugfix this here
-    ls_comids_loc <- proc.attr.hydfab::proc_attr_gageids(gage_ids=dat_loc,
+    loc_id <- Retr_Params$loc_id_read$loc_id
+    ls_comids_loc <- proc.attr.hydfab::proc_attr_gageids(gage_ids=dat_loc[['gage_id']],
                                                          featureSource=Retr_Params$loc_id_read$featureSource_loc,
                                                          featureID=Retr_Params$loc_id_read$featureID_loc,
                                                          Retr_Params,

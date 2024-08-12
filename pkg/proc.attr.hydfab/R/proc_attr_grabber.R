@@ -494,10 +494,18 @@ read_loc_data <- function(loc_id_filepath, loc_id, fmt = 'csv'){
     # assign every col as a character string because leading zeros risk being dropped
     schema <- arrow::schema(!!!setNames(rep(list(arrow::string()), length(cols)), cols))
     # Read in dataset
-    dat_loc <- arrow::open_dataset(loc_id_filepath,format = fmt,
-                                   col_types=schema) %>%
-      dplyr::select(dplyr::all_of(loc_id)) %>% dplyr::collect() %>%
-      dplyr::rename('gage_id' = loc_id)
+    if (grepl('tsv|text|csv',tools::file_ext(loc_id_filepath))){
+      dat_loc <- arrow::open_dataset(loc_id_filepath,format = fmt,
+                                     col_types=schema) %>%
+        dplyr::select(dplyr::all_of(loc_id)) %>% dplyr::collect() %>%
+        dplyr::rename('gage_id' = loc_id)
+    } else {
+      dat_loc <- arrow::open_dataset(loc_id_filepath,format = fmt,
+                                     schema=schema) %>%
+        dplyr::select(dplyr::all_of(loc_id)) %>% dplyr::collect() %>%
+        dplyr::rename('gage_id' = loc_id)
+    }
+
   } else {
     base::message(glue::glue("No location dataset defined. Reconsider designation for \n {loc_id_filepath}."))
     dat_loc <- NULL
@@ -581,7 +589,9 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
 
   # 'all' an option if processing all datasets desired. Otherwise list datasets in config file
   all_ds <- base::basename(base::list.dirs(Retr_Params$paths$dir_std_base,recursive=F))
-  if(Retr_Params$datasets[1]=='all'){ # Process all datasets inside a directory
+  if(base::is.null(Retr_Params$datasets)){
+    datasets <- NULL
+  } else if (Retr_Params$datasets[1]=='all'){ # Process all datasets inside a directory
     datasets <- all_ds
   } else { # Only process those datasets listed inside the directory
     datasets <- Retr_Params$datasets
@@ -615,24 +625,29 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
                                                      overwrite=overwrite)
     ls_comids_all[[dataset_name]] <- ls_comids
   }
-
+  # -------------------------------------------------------------------------- #
   # ------------ Grab attributes from a separate loc_id file ----------------- #
-  # Generate list of identifiers
-  dat_loc <- proc.attr.hydfab::read_loc_data(Retr_Params$loc_id_read$loc_id_filepath,
-                           Retr_Params$loc_id_read$gage_id)
+  if (!base::is.null(Retr_Params$loc_id_read$loc_id_filepath)){
+    # Generate list of identifiers
+    dat_loc <- proc.attr.hydfab::read_loc_data(Retr_Params$loc_id_read$loc_id_filepath,
+                                               Retr_Params$loc_id_read$gage_id)
 
-  if(base::nrow(dat_loc)>0){
-    # TODO bugfix this here
-    loc_id <- Retr_Params$loc_id_read$loc_id
-    ls_comids_loc <- proc.attr.hydfab::proc_attr_gageids(gage_ids=as.array(dat_loc[['gage_id']]),
-                                                         featureSource=Retr_Params$loc_id_read$featureSource_loc,
-                                                         featureID=Retr_Params$loc_id_read$featureID_loc,
-                                                         Retr_Params,
-                                                         lyrs=lyrs,
-                                                         overwrite=overwrite)
-  } else {
-    # TODO add check that user didn't provide parameter expecting to read data
+    if(base::nrow(dat_loc)>0){
+      # TODO bugfix this here
+      loc_id <- Retr_Params$loc_id_read$loc_id
+      ls_comids_loc <- proc.attr.hydfab::proc_attr_gageids(gage_ids=as.array(dat_loc[['gage_id']]),
+                                                           featureSource=Retr_Params$loc_id_read$featureSource_loc,
+                                                           featureID=Retr_Params$loc_id_read$featureID_loc,
+                                                           Retr_Params,
+                                                           lyrs=lyrs,
+                                                           overwrite=overwrite)
+    } else {
+      # TODO add check that user didn't provide parameter expecting to read data
+    }
+    # Combine lists
+    ls_comids_all[[Retr_Params$loc_id_read$loc_id_filepath]] <- ls_comids_loc
   }
+
 
 
   return(ls_comids_all)

@@ -25,7 +25,7 @@ usgs_vars <- c('TOT_TWI','TOT_PRSNOW','TOT_POPDENS90','TOT_EWT','TOT_RECHG')
 # Define data directories to a package-specific data path
 dir_base <- system.file("extdata",package="proc.attr.hydfab")
 # Refer to temp_dir <- tempdir() in setup.R
-temp_dir <- local_temp_dir()
+temp_dir <- local_temp_dir() # If running this on your own, source 'setup.R' first.
 dir_hydfab <- file.path(temp_dir,'hfab')
 dir_db_attrs <- file.path(temp_dir,'attrs') # used for temporary attr retrieval
 dir_db_attrs_pkg <- system.file("extdata","attributes_pah",package="proc.attr.hydfab")# permanent pacakage location
@@ -93,17 +93,19 @@ testthat::test_that('proc_attr_gageids',{
                                                    lyrs="network",overwrite=FALSE)
 
   # test a wrong featureSource
-  testthat::expect_error(proc.attr.hydfab::proc_attr_gageids(gage_ids=ls_fsds_std$gage_ids[2],
+  testthat::expect_message(proc.attr.hydfab::proc_attr_gageids(gage_ids=ls_fsds_std$gage_ids[2],
                                                    featureSource='notasource',
                                                    featureID=ls_fsds_std$featureID,
                                                    Retr_Params=Retr_Params,
-                                                   lyrs="network",overwrite=FALSE))
-
-  testthat::expect_error(proc.attr.hydfab::proc_attr_gageids(gage_ids=c(ls_fsds_std$gage_ids[2],NA),
-                                                                                        featureSource='notasource',
-                                                                                        featureID=ls_fsds_std$featureID,
-                                                                                        Retr_Params=Retr_Params,
-                                                                                        lyrs="network",overwrite=FALSE))
+                                                   lyrs="network",overwrite=FALSE),
+                           regexp="Skipping")
+  # Expect 'skipping' this gage_id b/c NA doesn't exist
+  testthat::expect_message(proc.attr.hydfab::proc_attr_gageids(gage_ids=c(NA),
+                                                              featureSource='nwissite',
+                                                              featureID=ls_fsds_std$featureID,
+                                                              Retr_Params=Retr_Params,
+                                                              lyrs="network",overwrite=FALSE),
+                           regexp="Skipping")
 
 })
 
@@ -127,7 +129,7 @@ testthat::test_that('retrieve_attr_exst', {
   # Testing for No parquet files present
   capt_no_parquet <- testthat::capture_condition(proc.attr.hydfab::retrieve_attr_exst(comids,
                                                                 vars,
-                                                                dir_db_attrs=dirname(dir_db_attrs_pkg)))
+                                                                dir_db_attrs=dirname(dirname(dir_db_attrs_pkg))))
   testthat::expect_true(grepl("parquet",capt_no_parquet$message))
   nada_var <- testthat::capture_warning(proc.attr.hydfab::retrieve_attr_exst(comids,vars=c("TOT_TWI","naDa"),
                                               dir_db_attrs_pkg))
@@ -218,6 +220,20 @@ testthat::test_that("grab_attrs_datasets_fsds_wrap", {
   # When 'all' datasets requested, should have the same number retrieved
   testthat::expect_equal(length(ls_comids_all_ds),
                         length(list.files(Retr_Params_all_ds$paths$dir_std_base)))
+
+  # Test running just the dataset path - not reading in a netcdf dataset.
+  Retr_Params_no_ds <- Retr_Params
+  Retr_Params_no_ds$datasets <- NULL
+  good_file <- file.patRetr_Params_no_dsgood_file <- file.path(dir_base,"gage_id_example.csv")
+  Retr_Params_no_ds$loc_id_read$loc_id_filepath <- good_file
+  Retr_Params_no_ds$loc_id_read$gage_id <- 'gage_id'
+  Retr_Params_no_ds$loc_id_read$featureSource_loc <- 'nwissite'
+  Retr_Params_no_ds$loc_id_read$featureID_loc <- 'USGS-{gage_id}'
+  dat_gid_ex <- proc.attr.hydfab::grab_attrs_datasets_fsds_wrap(Retr_Params_no_ds,
+                                                  lyrs="network",
+                                                  overwrite=FALSE)
+
+
 })
 
 

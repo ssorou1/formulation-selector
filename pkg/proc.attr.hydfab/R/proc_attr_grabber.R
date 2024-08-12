@@ -630,7 +630,8 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
   if (!base::is.null(Retr_Params$loc_id_read$loc_id_filepath)){
     # Generate list of identifiers
     dat_loc <- proc.attr.hydfab::read_loc_data(Retr_Params$loc_id_read$loc_id_filepath,
-                                               Retr_Params$loc_id_read$gage_id)
+                                               Retr_Params$loc_id_read$gage_id,
+                                               fmt = Retr_Params$loc_id_read$fmt)
 
     if(base::nrow(dat_loc)>0){
       # TODO bugfix this here

@@ -445,20 +445,23 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
     # Retrieve the COMID
     # Reference: https://doi-usgs.github.io/nhdplusTools/articles/get_data_overview.html
     nldi_feat <- base::list(featureSource =featureSource,
-                            featureID = glue::glue(featureID) # This should expect {'gage_id'} as a variable!
+                            featureID = as.character(glue::glue(featureID)) # This should expect {'gage_id'} as a variable!
     )
     site_feature <- try(nhdplusTools::get_nldi_feature(nldi_feature = nldi_feat))
     if('try-error' %in% class(site_feature)){
       stop(glue::glue("The following nldi features didn't work. You may need to
              revisit the configuration yaml file that processes this dataset in
             fsds_proc: \n {featureSource}, and featureID={featureID}"))
+    } else if (!is.null(site_feature)){
+      comid <- site_feature['comid']$comid
+      ls_comid[[gage_id]] <- comid
+      # Retrieve the variables corresponding to datasets of interest & update database
+      loc_attrs <- proc.attr.hydfab::proc_attr_wrap(comid=comid,
+                                                    Retr_Params=Retr_Params,
+                                                    lyrs='network',overwrite=FALSE)
+    } else {
+      message(glue::glue("Skipping {gage_id}"))
     }
-    comid <- site_feature['comid']$comid
-    ls_comid[[gage_id]] <- comid
-    # Retrieve the variables corresponding to datasets of interest & update database
-    loc_attrs <- proc.attr.hydfab::proc_attr_wrap(comid=comid,
-                                                  Retr_Params=Retr_Params,
-                                                  lyrs='network',overwrite=FALSE)
   }
   just_comids <- ls_comid %>% unname() %>% unlist()
 
@@ -469,6 +472,45 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
                        {gage_ids_missing}"))
   }
   return(ls_comid)
+}
+
+read_loc_data <- function(loc_id_filepath, loc_id, fmt = 'csv'){
+  #' @title Read location identifiers
+  #' @description Reads directly from a csv or arrow-compatible dataset.
+  #' Returns the dataset's column identifer renamed as 'gage_id' in a tibble
+  #' @param loc_id_filepath csv filepath or dataset filepath/directory.
+  #' @param loc_id The column name of the identifier column
+  #' @param fmt The format passed to arrow::open_dataset() in the non-csv case.
+  #' Default 'csv'. May also be 'parquet', 'arrow', 'feather', 'zarr', etc.
+  #' @seealso [proc_attr_read_gage_ids_fsds()]
+  #' @seealso [proc_attr_wrap()]
+  #' @export
+  # Changelog / contributions
+  #  2024-08-09 Originally created
+
+  if (!base::is.null(loc_id_filepath)){
+    # Figure out the colnames of everything in the dataset.
+    cols <- arrow::open_dataset(loc_id_filepath, format = fmt) %>% base::colnames()
+    # assign every col as a character string because leading zeros risk being dropped
+    schema <- arrow::schema(!!!setNames(rep(list(arrow::string()), length(cols)), cols))
+    # Read in dataset
+    if (grepl('tsv|text|csv',tools::file_ext(loc_id_filepath))){
+      dat_loc <- arrow::open_dataset(loc_id_filepath,format = fmt,
+                                     col_types=schema) %>%
+        dplyr::select(dplyr::all_of(loc_id)) %>% dplyr::collect() %>%
+        dplyr::rename('gage_id' = loc_id)
+    } else {
+      dat_loc <- arrow::open_dataset(loc_id_filepath,format = fmt,
+                                     schema=schema) %>%
+        dplyr::select(dplyr::all_of(loc_id)) %>% dplyr::collect() %>%
+        dplyr::rename('gage_id' = loc_id)
+    }
+
+  } else {
+    base::message(glue::glue("No location dataset defined. Reconsider designation for \n {loc_id_filepath}."))
+    dat_loc <- NULL
+  }
+  return(dat_loc)
 }
 
 proc_attr_read_gage_ids_fsds <- function(dir_dataset, ds_filenames=''){
@@ -511,6 +553,8 @@ proc_attr_read_gage_ids_fsds <- function(dir_dataset, ds_filenames=''){
     featureSource <- attrs$featureSource
     featureID <- attrs$featureID # intended to reformat gage_id into the appropriate nldi format using glue(e.g. glue('USGS-{gage_id}')
   } else {
+    print(paste0("The following contents inside \n",dir_ds,
+                 "\n do not match expected format:\n", paste0(fns, collapse = ", ")))
     stop("Create a different file format reader here that generates everything in the return list.")
     # TODO make this more adaptable so that it doesn't depend on running python fsds_proc beforehand
     # Idea: e.g. read in user-defined gage_id data as a .csv
@@ -545,7 +589,9 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
 
   # 'all' an option if processing all datasets desired. Otherwise list datasets in config file
   all_ds <- base::basename(base::list.dirs(Retr_Params$paths$dir_std_base,recursive=F))
-  if(Retr_Params$datasets[1]=='all'){ # Process all datasets inside a directory
+  if(base::is.null(Retr_Params$datasets)){
+    datasets <- NULL
+  } else if (Retr_Params$datasets[1]=='all'){ # Process all datasets inside a directory
     datasets <- all_ds
   } else { # Only process those datasets listed inside the directory
     datasets <- Retr_Params$datasets
@@ -579,5 +625,30 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
                                                      overwrite=overwrite)
     ls_comids_all[[dataset_name]] <- ls_comids
   }
+  # -------------------------------------------------------------------------- #
+  # ------------ Grab attributes from a separate loc_id file ----------------- #
+  if (!base::is.null(Retr_Params$loc_id_read$loc_id_filepath)){
+    # Generate list of identifiers
+    dat_loc <- proc.attr.hydfab::read_loc_data(Retr_Params$loc_id_read$loc_id_filepath,
+                                               Retr_Params$loc_id_read$gage_id)
+
+    if(base::nrow(dat_loc)>0){
+      # TODO bugfix this here
+      loc_id <- Retr_Params$loc_id_read$loc_id
+      ls_comids_loc <- proc.attr.hydfab::proc_attr_gageids(gage_ids=as.array(dat_loc[['gage_id']]),
+                                                           featureSource=Retr_Params$loc_id_read$featureSource_loc,
+                                                           featureID=Retr_Params$loc_id_read$featureID_loc,
+                                                           Retr_Params,
+                                                           lyrs=lyrs,
+                                                           overwrite=overwrite)
+    } else {
+      # TODO add check that user didn't provide parameter expecting to read data
+    }
+    # Combine lists
+    ls_comids_all[[Retr_Params$loc_id_read$loc_id_filepath]] <- ls_comids_loc
+  }
+
+
+
   return(ls_comids_all)
 }

@@ -9,7 +9,7 @@ setup(
     package_data={'' : ['./data/*.yaml']},
     name="fsds_proc",
     version="0.1.3",
-    author="Guy Litt",
+    author="Guy Litt, Ben Choat, Lauren Bolotin",
     author_email="guy.litt@noaa.gov",
     description="A simple package for processing data in the formulation selection decision support tool",
     packages=find_packages(),

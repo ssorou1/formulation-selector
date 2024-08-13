@@ -1,15 +1,17 @@
 '''
-Helper functions for processing evaluation metrics datasets
-author:: Guy Litt <guy.litt@noaa.gov>
-description:: functions read in yaml schema and standardize metrics datasets
-notes:: developed using python v3.12
+proc_eval_metrics.py
 
-Changelog/contributions
-    2024-07-02 Originally created, GL
-    2024-07-09 added different file format/dir path options; add file format checkers, GL
+Helper functions for processing evaluation metrics datasets
+
+:author: Guy Litt <guy.litt@noaa.gov>
+:description: functions read in yaml schema and standardize metrics datasets
+:note: developed using python v3.12
 
 '''
-
+#  Changelog/contributions
+#     2024-07-02 Originally created, GL
+#     2024-07-09 added different file format/dir path options; add file format checkers, GL
+#     2024-08-13 update docstrings, GL
 
 import pandas as pd
 from pathlib import Path
@@ -79,14 +81,14 @@ def _proc_check_input_config(
     
     """
     Check input config file to ensure it contains the minimum expected 
-        categories
+    |    categories
 
     :raises ValueError: _description_
     :raises ValueError: _description_
     :raises ValueError: _description_
     :raises ValueError: _description_
 
-    seealso:: :func: `read_schm_ls_of_dict`
+    :seealso: :func: `read_schm_ls_of_dict`
     :TODO: add further checks after testing more datasets
 
     """
@@ -118,17 +120,17 @@ def _proc_check_input_config(
                         f" defined under 'formulation_metadata': {', '.join(req_file_io)}")
 
 def read_schm_ls_of_dict(schema_path: str | os.PathLike) -> pd.DataFrame:
-    """Read a dataset's schema file designed as a list of dicts
+    """Read a dataset's configuration file designed as a list of dicts
 
-    :param schema_path: _description_
+    :param schema_path: path to the user-created configuration file
     :type schema_path: str | os.PathLike
-    :return: he filepath to the schema
+    :return: the filepath to the schema
     :rtype: pd.DataFrame
-    
-    note::
-    Changelog/contributions
-    2024-07-02 Originally created, GL
+
     """
+    # Changelog/contributions
+    #   2024-07-02 Originally created, GL
+
     # Load the YAML configuration file
     with open(schema_path, 'r') as file:
         config = yaml.safe_load(file)
@@ -240,12 +242,11 @@ def _proc_check_input_df(df: pd.DataFrame,
         each row is 'gage_id'
     :rtype: pd.DataFrame
 
-    note::
-    Changelog/contributions
-        2024-07-09, originally created, GL
-        2024-07-11, bugfix in case index is already named 'gage_id', GL
-    """
 
+    """
+    # Changelog/contributions
+    #     2024-07-09, originally created, GL
+    #     2024-07-11, bugfix in case index is already named 'gage_id', GL
 
     gage_id = col_schema_df.loc[0, 'gage_id']
     metric_cols = col_schema_df.loc[0, 'metric_cols']
@@ -312,16 +313,18 @@ def proc_col_schema(df: pd.DataFrame,
     :param dir_save: Path for saving the standardized metric data file(s)
         and the metadata file.
     :type dir_save: str | os.PathLike
-    :raises ValueError: _description_
-    :return: _description_
+    :raises ValueError: when dir_save does not contain the expected directory
+        structure in cases when saving non-hierarchical file formats
+    :return: dataset of the standardized data/metadata
     :rtype: xr.Dataset
 
-    seealso:: :func:`read_schm_ls_of_dict`
+    :seealso: :func:`read_schm_ls_of_dict`
 
-    note:: 
-    Changelog/contributions
-    2024-07-02, originally created, GL
     """
+    # Changelog/contributions
+    #  2024-07-02, originally created, GL
+
+
     print(f"Standardizing datasets and writing to {dir_save}")
     # Based on the standardized column schema naming conventions
     dataset_name =  col_schema_df.loc[0, 'dataset_name']

@@ -124,9 +124,10 @@ def read_schm_ls_of_dict(schema_path: str | os.PathLike) -> pd.DataFrame:
     :type schema_path: str | os.PathLike
     :return: he filepath to the schema
     :rtype: pd.DataFrame
+    
     note::
     Changelog/contributions
-        2024-07-02 Originally created, GL
+    2024-07-02 Originally created, GL
     """
     # Load the YAML configuration file
     with open(schema_path, 'r') as file:
@@ -319,7 +320,7 @@ def proc_col_schema(df: pd.DataFrame,
 
     note:: 
     Changelog/contributions
-        2024-07-02, originally created, GL
+    2024-07-02, originally created, GL
     """
     print(f"Standardizing datasets and writing to {dir_save}")
     # Based on the standardized column schema naming conventions

@@ -13,6 +13,7 @@ library(hydrofabric)
 library(hfsubsetR)
 library(data.table)
 library(pkgcond)
+library(yaml)
 
 retrieve_attr_exst <- function(comids, vars, dir_db_attrs, bucket_conn=NA){
   #' @title Grab previously-aggregated attributes from locations of interest
@@ -636,3 +637,53 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
 
   return(ls_comids_all)
 }
+
+check_attr_selection <- function(attr_cfg_path){
+  # Read in the menu of attributes available through FSDS
+  attr_menu <- yaml::read_yaml('./fsds_attr_menu_nocat.yaml')
+
+  # Read in the user defined config of attributes of interest
+  attr_cfg <- yaml::read_yaml(attr_cfg_path)
+  
+  # Determine which data sets the user specifies attributes from
+  ha_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
+    base::unlist() %>% base::grep(pattern = "ha_vars")
+  ha_vars_sel <- base::sapply(ha_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
+    base::unlist() |> 
+    base::unname() |>
+    base::tolower()
+  
+  usgs_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
+    base::unlist() %>% base::grep(pattern = "usgs_vars")
+  usgs_vars_sel <- base::sapply(usgs_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
+    base::unlist() |> 
+    base::unname() |>
+    base::tolower()
+  
+  sc_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
+    base::unlist() %>% base::grep(pattern = "sc_vars")
+  sc_vars_sel <- base::sapply(sc_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
+    base::unlist() |> 
+    base::unname() |>
+    base::tolower()
+  
+  vars_sel <- c(ha_vars_sel, usgs_vars_sel, sc_vars_sel) # camels_vars_sel
+  rm(ha_vars_sel, usgs_vars_sel, sc_vars_sel, camels_vars_sel)
+  
+  # Check if the entered variables exist in the attribute menu
+  ha_menu <- base::unlist(attr_menu$hydroatlas_attributes) |> base::names() |> 
+    base::tolower()
+  # usgs_menu <- unlist(attr_menu$usgs_attributes) |> names() |> tolower()
+  # sc_menu <- unlist(attr_menu$sc_attributes) |> names() |> tolower()
+  camels_menu <- base::unlist(attr_menu$camels_attributes) |> base::names() |> 
+    base::tolower()
+  vars_menu <- c(ha_menu, camels_menu) # sc_menu, usgs_menu
+  rm(ha_menu, usgs_menu, sc_menu, camels_menu)
+  
+  missing_vars <- which(!vars_sel %in% vars_menu)
+  if (length(missing_vars) > 0){
+    print('WARNING: the following attributes, as specified, were not found in the attribute menu:')
+    print(vars_sel[missing_vars])
+  }
+}
+

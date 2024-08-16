@@ -506,10 +506,6 @@ def process_custom_attributes(config_file: str | os.PathLike) -> pd.DataFrame:
     # get list of files
     files_in = list(config['files_in'].keys())
 
-    #####
-    # make sure config file is as expected
-    ####
-
     # define empty dict to append data to as read in
     dict_dfs_in = {f: [] for f in files_in}
 
@@ -583,5 +579,5 @@ def process_custom_attributes(config_file: str | os.PathLike) -> pd.DataFrame:
 
 if __name__ == '__main__':
     test1 = process_custom_attributes('data/custom_attribute_config.yaml')
-    # test2 = process_custom_attributes('data/custom_attribute_config2.yaml')
-    # test3 = process_custom_attributes('data/custom_attribute_config3.yaml')
+    test2 = process_custom_attributes('data/custom_attribute_config2.yaml')
+    test3 = process_custom_attributes('data/custom_attribute_config3.yaml')

@@ -1,22 +1,17 @@
 # template for loading custom attributes
-col_schema:   # required column mappings in the evaluation metrics dataset
-  # if a single column name is provided for gage_ids, then it is used across all files
-  # if a list is provided (e.g., ['col1', 'col1a']), there must be a value in the list for 
-  # each file and/or tab specified below
-  - gage_ids: [STAID, STAID, STAID2]
-  # - file_types: ['txt', 'txt'] # accepted file types include txt, csv, tsv, xlsx, xlsm
-  - test2: [col1, col2, col3]
-
+output_file:   # where to save compiled data
+  - data/TEST_CUSTOM_OUT2.csv
 
 # TODO: add ability to read in a list of gage_ids to use/keep
 # file_io defines the name of each file holding attributes of interest, and specifies column names of interest for each file
 # accepted file extensions include csv, txt, xlsx, xlsm
 files_in: # May define {home_dir} for python's '{home_dir}/string_path'.format(home_dir =str(Path.home())) functionality
-
   C:/Projects/NOAA_NWM/Data/GAGESii/basinchar_and_report_sept_2011/gagesII_sept30_2011_conterm.xlsx:
     tabs:
       BasinID:
-        columns:
+        id_column: # column holding site id for this tab or file
+          - STAID
+        attr_columns: # columns holding attributes
           - DRAIN_SQKM
           - HUC02
           - LAT_GAGE
@@ -26,11 +21,15 @@ files_in: # May define {home_dir} for python's '{home_dir}/string_path'.format(h
           - HCDN-2009 
           - HBN36
       Bas_Classif:
-        columns:
+        id_column:
+          - STAID
+        attr_columns:
           - CLASS
           - AGGECOREGION
       Climate:
-        columns:
+        id_column:
+          - STAID
+        attr_columns:
           - PPTAVG_BASIN
           - T_AVG_SITE
 

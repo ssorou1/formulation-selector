@@ -640,50 +640,57 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
 
 check_attr_selection <- function(attr_cfg_path){
   # Read in the menu of attributes available through FSDS
+  # attr_menu <- yaml::read_yaml('./fsds_attr_menu.yaml')
   attr_menu <- yaml::read_yaml('./fsds_attr_menu_nocat.yaml')
-
+  
   # Read in the user defined config of attributes of interest
+  # attr_cfg <- yaml::read_yaml('../../scripts/eval_ingest/xssa/xssa_attr_config_reformat2.yaml')
+  attr_cfg_path <- '../../scripts/eval_ingest/xssa/xssa_attr_config.yaml'
   attr_cfg <- yaml::read_yaml(attr_cfg_path)
   
   # Determine which data sets the user specifies attributes from
   ha_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
     base::unlist() %>% base::grep(pattern = "ha_vars")
   ha_vars_sel <- base::sapply(ha_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
-    base::unlist() |> 
-    base::unname() |>
-    base::tolower()
+    unlist() |> 
+    unname() |>
+    tolower()
   
   usgs_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
     base::unlist() %>% base::grep(pattern = "usgs_vars")
   usgs_vars_sel <- base::sapply(usgs_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
-    base::unlist() |> 
-    base::unname() |>
-    base::tolower()
+    unlist() |> 
+    unname() |>
+    tolower()
   
   sc_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
     base::unlist() %>% base::grep(pattern = "sc_vars")
   sc_vars_sel <- base::sapply(sc_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
-    base::unlist() |> 
-    base::unname() |>
-    base::tolower()
+    unlist() |> 
+    unname() |>
+    tolower()
   
   vars_sel <- c(ha_vars_sel, usgs_vars_sel, sc_vars_sel) # camels_vars_sel
   rm(ha_vars_sel, usgs_vars_sel, sc_vars_sel, camels_vars_sel)
   
   # Check if the entered variables exist in the attribute menu
-  ha_menu <- base::unlist(attr_menu$hydroatlas_attributes) |> base::names() |> 
+  ha_menu <- base::unlist(attr_menu$hydroatlas_attributes) |> 
+    base::names() |> 
     base::tolower()
-  # usgs_menu <- unlist(attr_menu$usgs_attributes) |> names() |> tolower()
-  # sc_menu <- unlist(attr_menu$sc_attributes) |> names() |> tolower()
-  camels_menu <- base::unlist(attr_menu$camels_attributes) |> base::names() |> 
+  usgs_menu <- base::unlist(attr_menu$usgs_attributes) |> 
+    base::names() |> 
     base::tolower()
-  vars_menu <- c(ha_menu, camels_menu) # sc_menu, usgs_menu
+  # sc_menu <- base::unlist(attr_menu$sc_attributes) |> base::names() |> base::tolower()
+  camels_menu <- base::unlist(attr_menu$camels_attributes) |> 
+    base::names() |> 
+    base::tolower()
+  vars_menu <- c(ha_menu, camels_menu, usgs_menu) # sc_menu
   rm(ha_menu, usgs_menu, sc_menu, camels_menu)
   
+  vars_sel %in% vars_menu
   missing_vars <- which(!vars_sel %in% vars_menu)
   if (length(missing_vars) > 0){
     print('WARNING: the following attributes, as specified, were not found in the attribute menu:')
     print(vars_sel[missing_vars])
   }
 }
-

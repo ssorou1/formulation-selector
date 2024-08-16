@@ -640,12 +640,10 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
 
 check_attr_selection <- function(attr_cfg_path){
   # Read in the menu of attributes available through FSDS
-  # attr_menu <- yaml::read_yaml('./fsds_attr_menu.yaml')
-  attr_menu <- yaml::read_yaml('./fsds_attr_menu_nocat.yaml')
-  
+  attr_menu <- yaml::read_yaml('./fsds_attr_menu.yaml')
+
   # Read in the user defined config of attributes of interest
-  # attr_cfg <- yaml::read_yaml('../../scripts/eval_ingest/xssa/xssa_attr_config_reformat2.yaml')
-  attr_cfg_path <- '../../scripts/eval_ingest/xssa/xssa_attr_config.yaml'
+  # attr_cfg_path <- '../../scripts/eval_ingest/xssa/xssa_attr_config.yaml'
   attr_cfg <- yaml::read_yaml(attr_cfg_path)
   
   # Determine which data sets the user specifies attributes from

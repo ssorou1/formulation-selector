@@ -1,7 +1,8 @@
 # template for loading custom attributes
-output_file:   # where to save compiled data
-  - data/TEST_CUSTOM_OUT1.csv
-
+output_file:   # where to save compiled data; accepted extensions are .csv and .parquet
+  - data/TEST_CUSTOM_OUT1.parquet
+file_id_subsets: # a .csv with a single column listing which gauges to keep (must match id_columns in files_in)
+    - data/tests/custom_attribute_data/id_subset.csv
 # TODO: add ability to read in a list of gage_ids to use/keep
 # file_io defines the name of each file holding attributes of interest, and specifies column names of interest for each file
 # accepted file extensions include csv, txt, xlsx, xlsm

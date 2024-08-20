@@ -1,0 +1,45 @@
+# template for loading custom attributes
+file_output:   # where to save compiled data
+  - data/TEST_CUSTOM_OUT2.csv
+file_id_subsets: # a .csv with a single column listing which gauges to keep (must match id_columns in files_in)
+    - tests/custom_attribute_data/id_subset.csv
+# files_in defines the name of each file holding attributes of interest, and specifies column names of interest for each file
+# accepted file extensions include csv, txt, xlsx, xlsm
+files_in: # May define {home_dir} for python's '{home_dir}/string_path'.format(home_dir =str(Path.home())) functionality
+  C:/Projects/NOAA_NWM/Data/GAGESii/basinchar_and_report_sept_2011/gagesII_sept30_2011_conterm.xlsx:
+    tabs:
+      BasinID:
+        id_column: # column holding site id for this tab or file
+          - STAID
+        attr_columns: # columns holding attributes
+          - DRAIN_SQKM
+          - HUC02
+          - LAT_GAGE
+          - LNG_GAGE
+          - STATE
+          - BOUND_SOURCE
+          - HCDN-2009 
+          - HBN36
+      Bas_Classif:
+        id_column:
+          - STAID
+        attr_columns:
+          - CLASS
+          - AGGECOREGION
+      Climate:
+        id_column:
+          - STAID
+        attr_columns:
+          - PPTAVG_BASIN
+          - T_AVG_SITE
+
+attribute_metadata:  
+  - 'dataset_name': 'ngenBEC' # Required. 
+  - 'date_represented': '2008-10-01' # Required. The YYYY-MM-DD date that the attribute data best represents
+  - 'source_datatsets': 'CAMELS, GAGES-II'
+  - 'source_datasets_references': 'https://ral.ucar.edu/solutions/products/camels, https://pubs.usgs.gov/publication/70046617'
+  - 'notes': 'e.g., data was generated for project xxx funded by xxx'
+references: # All optional but **very** helpful metadata
+  - 'source_url': 'NA'
+  - 'dataset_doi': 'NA'
+  - 'literature_doi': 'NA'

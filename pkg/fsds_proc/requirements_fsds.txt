@@ -1,6 +1,7 @@
 netCDF4
 openpyxl
 pandas
+pyarrow
 pyyaml
 wheel
 xarray

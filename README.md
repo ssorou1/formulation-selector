@@ -11,7 +11,7 @@ As NOAA OWP builds the model-agnostic NextGen framework, the hydrologic modeling
 Other things to include:
 
   - **Technology stack**: python. The formulation-selection decision support tool is intended to be a standalone analysis, though integration with pre-existing formulation evaluation metrics tools will eventually occur.
-  - **Status**:  Preliminary development. [CHANGELOG](CHANGELOG.md)._
+  - **Status**:  Preliminary development. [CHANGELOG](CHANGELOG.md).
   - **Links to production or demo instances**
   - _Describe what sets this apart from related-projects. Linking to another doc or page is OK if this can't be expressed in a sentence or two._
 

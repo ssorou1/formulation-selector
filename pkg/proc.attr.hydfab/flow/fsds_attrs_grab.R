@@ -30,7 +30,7 @@ library(glue)
 
 # Define input directory:
 # TODO change this to reading the standardized metadata, not the generated data
-raw_config <- yaml::read_yaml("/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_schema.yaml")
+raw_config <- yaml::read_yaml("/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_attr_config.yaml")
 
 datasets <- ds <- c("juliemai-xSSA",'all')[1] # A listing of datasets to grab attributes. Dataset names match what is inside dir_std_base.  'all' processes all datasets inside dir_std_base.
 ds_nc_filenames <- c('juliemai-xSSA_Raven_blended.nc','*.nc')[1]

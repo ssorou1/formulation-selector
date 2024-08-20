@@ -62,7 +62,7 @@ retrieve_attr_exst <- function(comids, vars, dir_db_attrs, bucket_conn=NA){
     # Query based on COMID & variables, then retrieve data
     dat_all_attrs <- try(arrow::open_dataset(dir_db_attrs) %>%
                            dplyr::mutate(across(where(is.factor), as.character)) %>% # factors are a pain!!
-                           dplyr::filter(COMID %in% !!comids) %>%
+                           dplyr::filter(featureID %in% !!comids) %>%
                            dplyr::filter(attribute %in% !!vars) %>%
                            dplyr::distinct() %>%
                            dplyr::collect())
@@ -75,8 +75,8 @@ retrieve_attr_exst <- function(comids, vars, dir_db_attrs, bucket_conn=NA){
   }
 
   # Run simple checks on retrieved data
-  if (base::any(!comids %in% dat_all_attrs$COMID)){
-    missing_comids <- comids[base::which(!comids %in% dat_all_attrs$COMID)]
+  if (base::any(!comids %in% dat_all_attrs$featureID)){
+    missing_comids <- comids[base::which(!comids %in% dat_all_attrs$featureID)]
     warning(base::paste0("Datasets missing the following comids: ",
                          base::paste(missing_comids,collapse=","),
                          "\nConsider running proc.attr.hydfab::proc_attr_wrap()"))
@@ -91,12 +91,12 @@ retrieve_attr_exst <- function(comids, vars, dir_db_attrs, bucket_conn=NA){
 
   # Run check on all comid-attribute pairings by counting comid-var pairings
   sum_var_df <- dat_all_attrs %>%
-    dplyr::group_by(COMID) %>%
+    dplyr::group_by(featureID) %>%
     summarise(n_distinct(attribute))
   idxs_miss_vars <- base::which(sum_var_df$`n_distinct(attribute)` != length(vars))
   if(base::length(idxs_miss_vars)>0){
     warning(glue::glue("The following comids are missing desired variables:
-              {paste(sum_var_df$COMID[idxs_miss_vars],collapse='\n')}
+              {paste(sum_var_df$featureID[idxs_miss_vars],collapse='\n')}
                        \nConsider running proc.attr.hydfab::proc_attr_wrap()"))
   }
 
@@ -361,7 +361,8 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
   attr_data_ls <- list()
   for(dat_srce in base::names(attr_data)){
     sub_dt_dat <- attr_data[[dat_srce]] %>% data.table::as.data.table()
-    sub_dt_dat$COMID <- base::as.character(sub_dt_dat$COMID)
+    sub_dt_dat$featureID <- base::as.character(sub_dt_dat$COMID)
+    sub_dt_dat$featureSource <- "comid"
     sub_dt_dat$data_source <- base::as.character(dat_srce)
     sub_dt_dat$dl_timestamp <- base::as.character(base::as.POSIXct(
       base::format(Sys.time()),tz="UTC"))

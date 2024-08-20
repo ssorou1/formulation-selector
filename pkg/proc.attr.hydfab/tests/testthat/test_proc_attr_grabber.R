@@ -119,7 +119,7 @@ testthat::test_that('retrieve_attr_exst', {
 
   # Run tests based on expected dims
   dat_attr_all <- proc.attr.hydfab::retrieve_attr_exst(comids,vars,dir_db_attrs_pkg)
-  testthat::expect_equal(length(unique(dat_attr_all$COMID)),
+  testthat::expect_equal(length(unique(dat_attr_all$featureID)), # TODO update datasets inside dir_db_attrs
                          length(comids))
   testthat::expect_equal(length(unique(dat_attr_all$attribute)),length(vars))
 

@@ -24,8 +24,8 @@ if ('bolotin' %in% Sys.getenv("HOME")) {
   fsds_dir <- file.path(Sys.getenv("HOME"),"git","fsds")
 }
 # Run unit tests?
-RunTest <- FALSE#TRUE Default FALSE prevents s3 data downloading in unit testing (FALSE=fast)
-ShowTestCovr <- TRUE # Only possible if RunTest==TRUE. Even slower though.
+RunTest <- TRUE#TRUE Default FALSE prevents s3 data downloading in unit testing (FALSE=fast)
+ShowTestCovr <- FALSE # Only possible if RunTest==TRUE. Even slower though.
 # ---------------------------------------------------------------------------- #
 # Enter in all R packages here
 namePack <- c("proc.attr.hydfab")

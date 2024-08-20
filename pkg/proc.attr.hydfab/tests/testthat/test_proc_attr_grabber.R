@@ -182,11 +182,14 @@ testthat::test_that("proc_attr_wrap", {
   # Test when some data exist in tempdir and new data needed
   Retr_Params_add <- Retr_Params
   # Sneak in the BFI variable
-  Retr_Params_add$vars$usgs_vars <- c("TOT_TWI","TOT_PRSNOW","TOT_POPDENS90","TOT_EWT","TOT_RECHG","TOT_BFI")
-  dat_all_bfi <- suppressWarnings(proc.attr.hydfab::proc_attr_wrap(comid,Retr_Params_add,
+  Retr_Params_add$vars$usgs_vars <- c("TOT_TWI","TOT_PRSNOW","TOT_POPDENS90",
+                                      "TOT_EWT","TOT_RECHG","TOT_BFI")
+  dat_all_bfi <- suppressWarnings(proc.attr.hydfab::proc_attr_wrap(comid,
+                                              Retr_Params_add,
                                               lyrs='network',
                                               overwrite=FALSE ))
-  testthat::expect_true(any('TOT_BFI' %in% dat_all_bfi$attribute)) # Does the BFI var exist?
+  # Does the BFI var exist?
+  testthat::expect_true(base::any('TOT_BFI' %in% dat_all_bfi$attribute))
   # testthat::expect_true(any(grepl("TOT_PRSNOW", dat_all_bfi$attribute)))
 
 
@@ -229,6 +232,7 @@ testthat::test_that("grab_attrs_datasets_fsds_wrap", {
   Retr_Params_no_ds$loc_id_read$gage_id <- 'gage_id'
   Retr_Params_no_ds$loc_id_read$featureSource_loc <- 'nwissite'
   Retr_Params_no_ds$loc_id_read$featureID_loc <- 'USGS-{gage_id}'
+  Retr_Params_no_ds$loc_id_read$fmt <- 'csv'
   dat_gid_ex <- proc.attr.hydfab::grab_attrs_datasets_fsds_wrap(Retr_Params_no_ds,
                                                   lyrs="network",
                                                   overwrite=FALSE)

@@ -302,7 +302,8 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
   #' acquired variables to a parquet file as a standard data.table format.
   #' Re-processing runs only download data that have not yet been acquired.
   #' @details Function returns & writes a data.table of all these fields:
-  #'   COMID - USGS common identifier
+  #'   featureID - e.g. USGS common identifier (default)
+  #'   featureSource - e.g. "COMID" (default)
   #'   data_source - where the data came from (e.g. 'usgs_nhdplus__v2','hydroatlas__v1')
   #'   dl_timestamp - timestamp of when data were downloaded
   #'   attribute - the variable identifier used in a particular dataset
@@ -361,14 +362,17 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
   attr_data_ls <- list()
   for(dat_srce in base::names(attr_data)){
     sub_dt_dat <- attr_data[[dat_srce]] %>% data.table::as.data.table()
+    # Even though COMID always expected, use featureSource and featureID for
+    #.  full compatibility with potential custom datasets
     sub_dt_dat$featureID <- base::as.character(sub_dt_dat$COMID)
-    sub_dt_dat$featureSource <- "comid"
+    sub_dt_dat$featureSource <- "COMID"
     sub_dt_dat$data_source <- base::as.character(dat_srce)
     sub_dt_dat$dl_timestamp <- base::as.character(base::as.POSIXct(
       base::format(Sys.time()),tz="UTC"))
+    sub_dt_dat <- sub_dt_dat %>% dplyr::select(-COMID)
     # Convert from wide to long format
     attr_data_ls[[dat_srce]] <- data.table::melt(sub_dt_dat,
-                             id.vars = c('COMID','data_source','dl_timestamp'),
+                             id.vars = c('featureID','featureSource', 'data_source','dl_timestamp'),
                              variable.name = 'attribute')
   }
   # Combine freshly-acquired data
@@ -495,7 +499,7 @@ read_loc_data <- function(loc_id_filepath, loc_id, fmt = 'csv'){
     # assign every col as a character string because leading zeros risk being dropped
     schema <- arrow::schema(!!!setNames(rep(list(arrow::string()), length(cols)), cols))
     # Read in dataset
-    if (grepl('tsv|text|csv',tools::file_ext(loc_id_filepath))){
+    if (grepl('tsv|text|csv|txt',tools::file_ext(loc_id_filepath))){
       dat_loc <- arrow::open_dataset(loc_id_filepath,format = fmt,
                                      col_types=schema) %>%
         dplyr::select(dplyr::all_of(loc_id)) %>% dplyr::collect() %>%

@@ -651,44 +651,59 @@ check_attr_selection <- function(attr_cfg_path){
     base::unlist() %>% base::grep(pattern = "ha_vars")
   ha_vars_sel <- base::sapply(ha_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
     unlist() |> 
-    unname() |>
-    tolower()
+    unname() #|>
+    # tolower()
   
   usgs_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
     base::unlist() %>% base::grep(pattern = "usgs_vars")
   usgs_vars_sel <- base::sapply(usgs_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
     unlist() |> 
-    unname() |>
-    tolower()
+    unname() #|>
+    # tolower()
   
   sc_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
     base::unlist() %>% base::grep(pattern = "sc_vars")
   sc_vars_sel <- base::sapply(sc_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
     unlist() |> 
-    unname() |>
-    tolower()
+    unname()# |>
+    # tolower()
   
   vars_sel <- c(ha_vars_sel, usgs_vars_sel, sc_vars_sel) # camels_vars_sel
   rm(ha_vars_sel, usgs_vars_sel, sc_vars_sel, camels_vars_sel)
   
   # Check if the entered variables exist in the attribute menu
   ha_menu <- base::unlist(attr_menu$hydroatlas_attributes) |> 
-    base::names() |> 
-    base::tolower()
+    base::names() #|> 
+    # base::tolower()
   usgs_menu <- base::unlist(attr_menu$usgs_attributes) |> 
-    base::names() |> 
-    base::tolower()
+    base::names() #|> 
+    # base::tolower()
   # sc_menu <- base::unlist(attr_menu$sc_attributes) |> base::names() |> base::tolower()
   camels_menu <- base::unlist(attr_menu$camels_attributes) |> 
-    base::names() |> 
-    base::tolower()
+    base::names() #|> 
+    # base::tolower()
   vars_menu <- c(ha_menu, camels_menu, usgs_menu) # sc_menu
   rm(ha_menu, usgs_menu, sc_menu, camels_menu)
   
-  vars_sel %in% vars_menu
-  missing_vars <- which(!vars_sel %in% vars_menu)
+  # Warn the user of any requested attrs that are missing
+  missing_vars <- vars_sel[which(!vars_sel %in% vars_menu)]
+  vars_menu_lower <- base::tolower(vars_menu)
+  missing_vars_lower <- which(vars_menu_lower %in% missing_vars)
+
   if (length(missing_vars) > 0){
-    print('WARNING: the following attributes, as specified, were not found in the attribute menu:')
-    print(vars_sel[missing_vars])
-  }
+    missing_vars <- paste0(missing_vars, collapse=', ')
+    missing_vars_correct <- paste0(missing_vars_correct, collapse = ', ')
+
+    warn_msg <- if(length(vars_menu[missing_vars_lower]) == 0){
+      missing_vars_correct <- vars_menu[missing_vars_lower]
+      glue::glue('The following attributes, as specified, were not found in the attribute menu:\n', 
+                 missing_vars, sep = ',')
+    }else{
+      glue::glue('The following attributes, as specified, were not found in the attribute menu:\n', 
+                 missing_vars, '\nDid you mean:\n', missing_vars_correct,
+                 "?\nIf so, please correct in the *attr_config.yaml file",
+                 sep = ',')
+    }
+    warning(warn_msg)
+    }
 }

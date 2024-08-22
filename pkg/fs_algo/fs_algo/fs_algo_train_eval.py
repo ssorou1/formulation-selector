@@ -1,10 +1,7 @@
-
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 import pandas as pd
-from pathlib import Path
 import xarray as xr
 import pynhd as nhd
 import dask_expr
@@ -61,7 +58,7 @@ def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] 
                                 navigation='upstreamMain',
                                 source='flowlines',
                                 distance=1).loc[0]['nhdplus_comid'] 
-                                for gage_id in gage_ids.values]
+                                for gage_id in gage_ids]
     return comids_resp
 
 # %% ALGORITHM TRAINING AND EVALUATION

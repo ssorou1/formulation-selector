@@ -4,7 +4,7 @@ import yaml
 import pandas as pd
 from pathlib import Path
 import xarray as xr
-
+from fs_algo.fs_algo_train_eval import AlgoTrainEval, _find_feat_srce_id, fs_retr_nhdp_comids, fs_read_attr_comid
 
 # Read in yaml file
 path_config =  '/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_attr_config.yaml' 
@@ -24,7 +24,7 @@ algo_config = {'rf': {'n_estimators':100},
                              'batch_size':'auto',
                              'learning_rate':'constant',
                              'power_t':0.5,
-                             'max_iter':10000,
+                             'max_iter':200000,
                              }}
 
 
@@ -40,15 +40,17 @@ dir_std_base =  list([x for x in config['file_io'] if 'dir_std_base' in x][0].va
 datasets = list([x for x in config['formulation_metadata'] if 'datasets' in x][0].values())[0]
 
 for ds in datasets: 
+    print(f'Processing {ds} dataset inside {dir_std_base}')
     # TODO implement a check to ensure each dataset directory exists
     path_nc = [x for x in Path(dir_std_base/Path(ds)).glob("*.nc") if x.is_file()]
+    
     #path_zarr = [x for x in Path(dir_std_base/Path(ds)).glob("*.zarr") if x.is_dir()]
     try:
-        dat_resp = xr.open_dataset(path_nc, engine='netcdf4')
+        dat_resp = xr.open_dataset(path_nc[0], engine='netcdf4')
     except:
         path_zarr = [x for x in Path(dir_std_base/Path(ds)).glob("*.zarr")]
         try:
-            dat_resp = xr.open_dataset(path_zarr,engine='zarr')
+            dat_resp = xr.open_dataset(path_zarr[0],engine='zarr')
         except:
             raise ValueError(f"Could not identify an approach to read in dataset via {path_nc} nor {path_zarr}")
     # The metrics approach
@@ -65,7 +67,7 @@ for ds in datasets:
     #%%  Read in predictor variable data (aka basin attributes) 
     # TODO list of variables of interest:
     # TODO  Setup the s3fs filesystem that is going to be used by xarray to open the parquet files
-    _s3 = s3fs.S3FileSystem(anon=True)
+    #_s3 = s3fs.S3FileSystem(anon=True)
 
     # TODO subset based on variables of interest
     # attr_arr = attr_df_sub.to_dask_array(lengths=True)
@@ -80,6 +82,7 @@ for ds in datasets:
 
     #%% Join attribute data and response data
     for metr in metrics:
+        print(f'...Processing {metr}')
         # Subset response data to metric of interest & the comid
         df_metr_resp = pd.DataFrame({'comid': dat_resp['comid'],
                                      metr : dat_resp[metr].data})
@@ -107,4 +110,7 @@ for ds in datasets:
 
         # Evaluate predictions
         eval_dict = trainer.evaluate_algos(y_test, preds_dict)
+
+    print(f'... Finish processing {ds}')
+
 dat_resp.close()

@@ -14,6 +14,7 @@ from pathlib import Path
 import joblib
 import itertools
 import yaml
+import warnings
 
 # %% BASIN ATTRIBUTES (PREDICTORS) & RESPONSE VARIABLES (e.g. METRICS)
 class AttrConfigAndVars:
@@ -35,7 +36,7 @@ class AttrConfigAndVars:
 
         if len(attrs_sel) == None: # If no attributes generated, assume all attributes are of interest
             attrs_sel = 'all'
-            raise Warning(f"No attributes discerned from 'attr_select' inside ")
+            raise warnings.warn(f"No attributes discerned from 'attr_select' inside ")
         
         home_dir = str(Path.home())
         dir_base = list([x for x in self.attr_config['file_io'] if 'dir_base' in x][0].values())[0].format(home_dir=home_dir)
@@ -91,7 +92,7 @@ def _check_attributes_exist(df_attr: pd.DataFrame, vars:pd.Series | Iterable):
         \n Consider running attribute grabber with fsds.attr.hydfab. \
         \n Missing attributes include: {', '.join(missing_vars)}"
 
-        raise Warning(warn_msg_missing_vars)
+        raise warnings.warn(warn_msg_missing_vars)
 
 
 
@@ -130,7 +131,7 @@ def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] 
                                 for gage_id in gage_ids]
     
     if len(comids_resp) != len(gage_ids) or comids_resp.count(None) > 0:
-        raise Warning("The total number of retrieved comids does not match \
+        raise warnings.warn("The total number of retrieved comids does not match \
                       total number of provided gage_ids")
 
     return comids_resp

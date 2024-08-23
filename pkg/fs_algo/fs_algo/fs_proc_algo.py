@@ -1,11 +1,10 @@
-
-from sklearn.model_selection import train_test_split
 import yaml
 import pandas as pd
 from pathlib import Path
 import xarray as xr
-from fs_algo.fs_algo_train_eval import AlgoTrainEval, _find_feat_srce_id, fs_retr_nhdp_comids, fs_read_attr_comid
-import joblib
+import fs_algo.fs_algo_train_eval as fsate
+
+print("BEGINNING algorithm training, testing, & evaluation.")
 
 # Read in yaml file
 path_config =  '/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_attr_config.yaml' 
@@ -70,8 +69,8 @@ for ds in datasets:
     gage_ids = dat_resp['gage_id'].values
 
     # %% COMID retrieval and assignment to response variable's coordinate
-    [featureSource,featureID] = _find_feat_srce_id(dat_resp,config)
-    comids_resp = fs_retr_nhdp_comids(featureSource,featureID,gage_ids)
+    [featureSource,featureID] = fsate._find_feat_srce_id(dat_resp,config)
+    comids_resp = fsate.fs_retr_nhdp_comids(featureSource,featureID,gage_ids)
     dat_resp = dat_resp.assign_coords(comid = comids_resp)
     # TODO allow secondary option where featureSource and featureIDs already provided, not COMID 
 
@@ -82,7 +81,7 @@ for ds in datasets:
 
     # TODO subset based on variables of interest
     # attr_arr = attr_df_sub.to_dask_array(lengths=True)
-    dd_attr = fs_read_attr_comid(dir_db_attrs, comids_resp, attrs_sel = 'all',_s3 = None,storage_options=None)
+    dd_attr = fsate.fs_read_attr_comid(dir_db_attrs, comids_resp, attrs_sel = 'all',_s3 = None,storage_options=None)
 
     # NOTE: additional subsetting may be performed on attr_df here before computing 
     df_attr = dd_attr.compute() # Create a pandas DataFrame
@@ -101,47 +100,22 @@ for ds in datasets:
         
         df_pred_resp = df_metr_resp.merge(df_attr_wide, left_on = 'comid', right_on = 'featureID')
 
-        # %% TRAIN ALGORITHMS AND EVALUATE PERFORMANCE
-        # Train/test split
-  
-        alg_cfig = algo_config.copy() # Back up the original model config before popping
 
-        # Initialize the trainer with algo_config and metric
-        trainer = AlgoTrainEval(algo_config={'rf': {'n_estimators': 100}, 
-                                                'mlp': {'hidden_layer_sizes': (100,), 'max_iter': 300}},
-                                metr=metr)
-
-        def train__eval(self):
-
-            # Train algorithms
-            algs_dict = trainer.train_algos(X_train, y_train)
-
-            # Make predictions
-            preds_dict = trainer.predict_algos(X_test)
-
-            # Evaluate predictions
-            eval_dict = trainer.evaluate_algos(y_test, preds_dict)
-
-            # Write algorithms to file
-            algs_dict_paths = trainer.save_algos(ds)
-
-            # Generate metadata dataframe
-            eval_df = trainer.org_metadata_alg() # Must be called after trainer.save_algos()
-
-        # eval_df = pd.DataFrame(eval_dict).transpose().rename_axis(index='algorithm')
-        # eval_df['loc_algo'] = pd.NA
+        train_eval = fsate.AlgoTrainEval(df=df_pred_resp,
+                                     vars=vars,algo_config=algo_config,
+                                     dir_out_alg_ds=dir_out_alg_ds, dataset_id=ds,
+                                     metr=metr,test_size=0.7, rs = 32)
         
+        # Run the training, testing, and evaluation wrapper:
+        train_eval.train_eval()
         
-
-
-        # Record location of trained algorithm
-        eval_df['loc_algo'] = [algs_dict[alg]['loc_algo'] for alg in algs_dict.keys()] 
-        rslt_eval[metr] = eval_df
+        # Retrieve evaluation metrics dataframe
+        rslt_eval[metr] = train_eval.eval_df
 
     rslt_eval_df = pd.concat(rslt_eval).reset_index(drop=True)
     rslt_eval_df['dataset'] = ds
-    rslt_eval_df['']
     rslt_eval_df.to_parquet(Path(dir_out_alg_ds)/Path('algo_eval_'+ds+'.parquet'))
     print(f'... Finish processing {ds}')
 
 dat_resp.close()
+print("FINISHED algorithm training, testing, & evaluation")

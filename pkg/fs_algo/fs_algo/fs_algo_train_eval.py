@@ -156,18 +156,22 @@ class AlgoTrainEval:
             path_algo = Path(self.dir_out_alg_ds) / Path(basename_alg_ds_metr + '.joblib')
             # write trained algorithm
             joblib.dump(self.algs_dict[algo]['algo'], path_algo)
-            self.algs_dict[algo]['loc_algo'] = path_algo
+            self.algs_dict[algo]['loc_algo'] = str(path_algo)
    
     def org_metadata_alg(self):
         # Must be called after running AlgoTrainEval.save_algos()
         # Record location of trained algorithm
         self.eval_df = pd.DataFrame(self.eval_dict).transpose().rename_axis(index='algorithm')
+
+        self.eval_df['dataset'] = self.dataset_id
+
         # Assign the locations where algorithms were saved
         self.eval_df['loc_algo'] = [self.algs_dict[alg]['loc_algo'] for alg in self.algs_dict.keys()] 
-    
+        self.eval_df['algo'] = self.eval_df.index
+        self.eval_df = self.eval_df.reset_index()
     
     def train_eval(self):
-        # Overall train, test, evaluation wrapper
+        # Overarching train, test, evaluation wrapper
 
         # Run the train/test split
         self.split_data()
@@ -185,6 +189,6 @@ class AlgoTrainEval:
         self.save_algos()
 
         # Generate metadata dataframe
-        self.org_metadata_alg() # Must be called after trainer.save_algos()
+        self.org_metadata_alg() # Must be called after save_algos()
         
 # %%

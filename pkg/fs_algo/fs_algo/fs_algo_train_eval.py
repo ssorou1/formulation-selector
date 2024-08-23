@@ -54,7 +54,7 @@ def _find_feat_srce_id(dat_resp: Optional[xr.core.dataset.Dataset] = None,
 
     return [featureSource, featureID]
 
-def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] ) ->list:
+def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] ) ->list:    
     # Retrieve response variable's comids, querying the shortest distance in the flowline
     nldi = nhd.NLDI()
     comids_resp = [nldi.navigate_byid(fsource=featureSource,fid= featureID.format(gage_id=gage_id),

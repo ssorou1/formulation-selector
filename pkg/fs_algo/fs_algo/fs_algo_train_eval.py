@@ -3,7 +3,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 import pandas as pd
-import numpy as np
 import xarray as xr
 import pynhd as nhd
 import dask_expr
@@ -13,13 +12,17 @@ from collections.abc import Iterable
 from typing import List, Optional, Dict
 from pathlib import Path
 import joblib
+import itertools
+import yaml
 
 # %% BASIN ATTRIBUTES (PREDICTORS) & RESPONSE VARIABLES (e.g. METRICS)
 def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list, attrs_sel = 'all',
                        _s3 = None,storage_options=None)-> dask_expr._collection.DataFrame:
     if _s3:
         storage_options={"anon",True} # for public
-    
+        # TODO  Setup the s3fs filesystem that will be used, with xarray to open the parquet files
+        #_s3 = s3fs.S3FileSystem(anon=True)
+
     # Read attribute data acquired using fsds.attr.hydfab R package
     all_attr_df = dd.read_parquet(dir_db_attrs, storage_options = storage_options)
 
@@ -43,11 +46,11 @@ def _check_attributes_exist(df_attr: pd.DataFrame, vars:pd.Series | Iterable):
 
         missing_vars = vars[~vars.isin(df_attr_sub_missing['attribute'])]
 
-        warn_msg_missing_vars = f"Not all featureID groupings (i.e. COMID groups) contain \n \
-        the same number of catchment attributes.\n \
-        This could be problematic for model training. \n \
-        Consider running attribute grabber with fsds.attr.hydfab.\n \
-        Missing attributes include: {', '.join(missing_vars)}"
+        warn_msg_missing_vars = f"Not all featureID groupings (i.e. COMID groups) contain \
+        the same number of catchment attributes. \
+        \n This could be problematic for model training. \
+        \n Consider running attribute grabber with fsds.attr.hydfab. \
+        \n Missing attributes include: {', '.join(missing_vars)}"
 
         raise Warning(warn_msg_missing_vars)
 
@@ -90,13 +93,47 @@ def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] 
 
     return comids_resp
 
+def _read_attr_config(path_attr_config: str | os.PathLike ) -> dict:
+    # Extract the desired basin attribute variable names from yaml file
+
+    # Attribute data location:
+    with open(path_attr_config, 'r') as file:
+        attr_config = yaml.safe_load(file)
+
+    # identify attribute data of interest from attr_config
+    attrs_all = [v for x in attr_config['attr_select'] for k,v in x.items() if '_vars' in k]
+    attrs_sel = [x for x in list(itertools.chain(*attrs_all)) if x is not None]
+
+    if len(attrs_sel) == None: # If no attributes generated, assume all attributes are of interest
+        attrs_sel = 'all'
+        raise Warning(f"No attributes discerned from 'attr_select' inside ")
+    
+    home_dir = str(Path.home())
+    dir_base = list([x for x in attr_config['file_io'] if 'dir_base' in x][0].values())[0].format(home_dir=home_dir)
+    # Location of attributes (predictor data):
+    dir_db_attrs = list([x for x in attr_config['file_io'] if 'dir_db_attrs' in x][0].values())[0].format(dir_base = dir_base)
+
+    # parent location of response variable data:
+    dir_std_base =  list([x for x in attr_config['file_io'] if 'dir_std_base' in x][0].values())[0].format(dir_base = dir_base)
+
+    # The datasets of interest
+    datasets = list([x for x in attr_config['formulation_metadata'] if 'datasets' in x][0].values())[0]
+    # Compile output
+    attrs_cfg_dict = {'attrs_sel' : attrs_sel,
+                        'dir_db_attrs': dir_db_attrs,
+                        'dir_std_base': dir_std_base,
+                        'dir_base': dir_base,
+                        'datasets': datasets}
+
+    return attrs_cfg_dict
+
 def fs_save_algo_dir_struct(dir_base: str | os.PathLike ) -> dict:
 
     if not Path(dir_base).exists():
-        raise ValueError(f"The provided dir_base does not exist. \n \
-                         Double check the config file to make sure \
-                         an existing directory is provided. dir_base=\n \
-                         {dir_base}")
+        raise ValueError(f"The provided dir_base does not exist. \
+                         \n Double check the config file to make sure \
+                         an existing directory is provided. dir_base= \
+                         \n{dir_base}")
 
     # Define the standardized directory structure for algorithm output
     # base save directory

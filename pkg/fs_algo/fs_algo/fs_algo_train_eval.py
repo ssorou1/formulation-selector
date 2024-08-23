@@ -3,6 +3,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 import pandas as pd
+import numpy as np
 import xarray as xr
 import pynhd as nhd
 import dask_expr
@@ -13,7 +14,7 @@ from typing import List, Optional, Dict
 from pathlib import Path
 import joblib
 
-# %% ATTRIBUTES
+# %% BASIN ATTRIBUTES (PREDICTORS) & RESPONSE VARIABLES (e.g. METRICS)
 def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list, attrs_sel = 'all',
                        _s3 = None,storage_options=None)-> dask_expr._collection.DataFrame:
     if _s3:
@@ -32,14 +33,32 @@ def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list, attrs_s
     attr_df_sub = attr_df_subloc[attr_df_subloc['attribute'].str.contains('|'.join(attrs_sel))]
     return attr_df_sub
 
+def _check_attributes_exist(df_attr: pd.DataFrame, vars:pd.Series | Iterable):
+    # Run check that all vars are present for all basins
+    if df_attr.groupby('featureID')['attribute'].count().nunique() != 1:
+        vec_missing = df_attr.groupby('featureID')['attribute'].count() != len(vars)
+        bad_comids = vec_missing.index.values
+        
+        df_attr_sub_missing = df_attr[df_attr['featureID'].isin(bad_comids)]
+
+        missing_vars = vars[~vars.isin(df_attr_sub_missing['attribute'])]
+
+        warn_msg_missing_vars = f"Not all featureID groupings (i.e. COMID groups) contain \n \
+        the same number of catchment attributes.\n \
+        This could be problematic for model training. \n \
+        Consider running attribute grabber with fsds.attr.hydfab.\n \
+        Missing attributes include: {', '.join(missing_vars)}"
+
+        raise Warning(warn_msg_missing_vars)
+
 def _find_feat_srce_id(dat_resp: Optional[xr.core.dataset.Dataset] = None,
-                       config: Optional[Dict] = None) -> List[str]:
+                       attr_config: Optional[Dict] = None) -> List[str]:
     # Attempt to grab dataset attributes (in cases where it differs by dataset), fallback on config file
     featureSource = None
     try: # dataset attributes first
         featureSource = dat_resp.attrs.get('featureSource', None)
     except (KeyError, StopIteration): # config file second
-        featureSource = next(x['featureSource'] for x in config['col_schema'] if 'featureSource' in x)
+        featureSource = next(x['featureSource'] for x in attr_config['col_schema'] if 'featureSource' in x)
     if not featureSource:
         raise ValueError(f'The featureSource could not be found. Ensure it is present in the col_schema section {path_config}')
     # Attempt to grab featureID from dataset attributes, fallback to the config file
@@ -47,7 +66,7 @@ def _find_feat_srce_id(dat_resp: Optional[xr.core.dataset.Dataset] = None,
     try: # dataset attributes first
         featureID = dat_resp.attrs.get('featureID', None)
     except (KeyError, StopIteration): # config file second
-        featureID = next(x['featureID'] for x in config['col_schema'] if 'featureID' in x)
+        featureID = next(x['featureID'] for x in attr_config['col_schema'] if 'featureID' in x)
     if not featureID:
         raise ValueError(f'The featureID could not be found. Ensure it is present in the col_schema section of {path_config}')
         # TODO need to map gage_id to location identifier in attribute data!
@@ -55,18 +74,31 @@ def _find_feat_srce_id(dat_resp: Optional[xr.core.dataset.Dataset] = None,
     return [featureSource, featureID]
 
 def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] ) ->list:    
+
     # Retrieve response variable's comids, querying the shortest distance in the flowline
     nldi = nhd.NLDI()
     comids_resp = [nldi.navigate_byid(fsource=featureSource,fid= featureID.format(gage_id=gage_id),
                                 navigation='upstreamMain',
                                 source='flowlines',
-                                distance=1).loc[0]['nhdplus_comid'] 
+                                distance=1 # the shortest distance
+                                ).loc[0]['nhdplus_comid'] 
                                 for gage_id in gage_ids]
+    
+    if len(comids_resp) != len(gage_ids) or comids_resp.count(None) > 0:
+        raise Warning("The total number of retrieved comids does not match \
+                      total number of provided gage_ids")
+
     return comids_resp
 
 def fs_save_algo_dir_struct(dir_base: str | os.PathLike ) -> dict:
-    # Define the standardized directory structure for algorithm output
 
+    if not Path(dir_base).exists():
+        raise ValueError(f"The provided dir_base does not exist. \n \
+                         Double check the config file to make sure \
+                         an existing directory is provided. dir_base=\n \
+                         {dir_base}")
+
+    # Define the standardized directory structure for algorithm output
     # base save directory
     dir_out = Path(Path(dir_base).parent.absolute()/Path('output'))
     dir_out.mkdir(exist_ok=True)

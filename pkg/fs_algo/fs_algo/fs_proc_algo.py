@@ -11,7 +11,7 @@ if __name__ == "__main__":
     parser.add_argument('path_algo_config', type=str, help='Path to the YAML configuration file specific for algorithm training')
     args = parser.parse_args()
 
-    path_algo_config = Path(args.path_algo_config) #'/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_algo_config.yaml' 
+    path_algo_config = Path(args.path_algo_config) #'/Users/guylitt/git/formulation-selector/scripts/eval_ingest/xssa/xssa_algo_config.yaml' 
 
     with open(path_algo_config, 'r') as file:
         algo_cfg = yaml.safe_load(file)
@@ -22,8 +22,7 @@ if __name__ == "__main__":
 
     name_attr_config = algo_cfg.get('name_attr_config', Path(path_algo_config).name.replace('algo','attr'))
     path_attr_config = Path(Path(path_algo_config).parent/name_attr_config)
-
-
+    verbose = algo_cfg['verbose']
 
 
     if not path_algo_config.exists():
@@ -120,7 +119,8 @@ if __name__ == "__main__":
                                         vars=attrs_sel,
                                         algo_config=algo_config,
                                         dir_out_alg_ds=dir_out_alg_ds, dataset_id=ds,
-                                        metr=metr,test_size=0.7, rs = 32)
+                                        metr=metr,test_size=0.7, rs = 32,
+                                        verbose=verbose)
             train_eval.train_eval() # Train, test, eval wrapper
             
             # Retrieve evaluation metrics dataframe

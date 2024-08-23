@@ -203,8 +203,8 @@ class AlgoTrainEval:
         # The evaluation summary result
         self.eval_df = pd.DataFrame()
     def split_data(self):
-        if(self.verbose):
-            print(f"Performing train/test split as {test_size}/{1-test_size}")
+        if self.verbose:
+            print(f"      Performing train/test split as {self.test_size}/{round(1-self.test_size,2)}")
 
         X = self.df[self.vars]
         y = self.df[self.metric]
@@ -215,6 +215,8 @@ class AlgoTrainEval:
 
         # Train algorithms based on config
         if 'rf' in self.algo_config:  # RANDOM FOREST
+            if self.verbose:
+                print(f"      Performing Random Forest Training")
             rf = RandomForestRegressor(n_estimators=self.algo_config['rf'].get('n_estimators'),
                                        random_state=self.rs)
             rf.fit(self.X_train, self.y_train)
@@ -223,6 +225,8 @@ class AlgoTrainEval:
                                     'metric': self.metric}
 
         if 'mlp' in self.algo_config:  # MULTI-LAYER PERCEPTRON
+            if self.verbose:
+                print(f"      Performing Multilayer Perceptron Training")
             mlpcfg = self.algo_config['mlp']
             mlp = MLPRegressor(random_state=self.rs,
                                hidden_layer_sizes=mlpcfg.get('hidden_layer_sizes', (100,)),
@@ -239,10 +243,11 @@ class AlgoTrainEval:
                                      'metric': self.metric}
 
     def predict_algos(self):
-        # Make predictions with trained algorithms
-        
+        # Make predictions with trained algorithms     
         for k, v in self.algs_dict.items():
             algo = v['algo']
+            if self.verbose:
+                print(f"      Generating predictions for {algo} algorithm.")   
             y_pred = algo.predict(self.X_test)
             self.preds_dict[k] = {'y_pred': y_pred,
                              'type': v['type'],
@@ -251,6 +256,8 @@ class AlgoTrainEval:
 
     def evaluate_algos(self):
         # Evaluate the predictions
+        if self.verbose:
+            print(f"      Evaluating predictions.")   
         # TODO add more evaluation metrics here
         for k, v in self.preds_dict.items():
             y_pred = v['y_pred']
@@ -263,8 +270,8 @@ class AlgoTrainEval:
     def save_algos(self):
         # Write algorithm to file & record save path in algs_dict['loc_algo']
         for algo in self.algs_dict.keys():
-            print(f"      Saving {algo} for {self.metric} to file")
-
+            if self.verbose:
+                print(f"      Saving {algo} for {self.metric} to file")
             basename_alg_ds_metr = f'algo_{algo}_{self.metric}__{self.dataset_id}'
             path_algo = Path(self.dir_out_alg_ds) / Path(basename_alg_ds_metr + '.joblib')
             # write trained algorithm

@@ -64,6 +64,36 @@ def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] 
                                 for gage_id in gage_ids]
     return comids_resp
 
+def fs_save_algo_dir_struct(dir_base: str | os.PathLike ) -> dict:
+    # Define the standardized directory structure for algorithm output
+
+    # base save directory
+    dir_out = Path(Path(dir_base).parent.absolute()/Path('output'))
+    dir_out.mkdir(exist_ok=True)
+
+    # The trained algorithm directory
+    dir_out_alg_base = Path(dir_out/Path('trained_algorithms'))
+    dir_out_alg_base.mkdir(exist_ok=True)
+
+    out_dirs = {'dir_out': dir_out,
+                'dir_out_alg_base': dir_out_alg_base}
+
+    return out_dirs
+
+def _open_response_data_fsds(dir_std_base,ds):
+    # TODO implement a check to ensure each dataset directory exists
+    path_nc = [x for x in Path(dir_std_base/Path(ds)).glob("*.nc") if x.is_file()]
+
+    try:
+        dat_resp = xr.open_dataset(path_nc[0], engine='netcdf4')
+    except:
+        path_zarr = [x for x in Path(dir_std_base/Path(ds)).glob("*.zarr")]
+        try:
+            dat_resp = xr.open_dataset(path_zarr[0],engine='zarr')
+        except:
+            raise ValueError(f"Could not identify an approach to read in dataset via {path_nc} nor {path_zarr}")
+    return dat_resp
+
 # %% ALGORITHM TRAINING AND EVALUATION
 class AlgoTrainEval:
     def __init__(self, df: pd.DataFrame, vars: Iterable[str], algo_config: dict,

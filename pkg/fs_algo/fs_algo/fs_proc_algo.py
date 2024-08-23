@@ -10,7 +10,11 @@ print("BEGINNING algorithm training, testing, & evaluation.")
 path_config =  '/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_attr_config.yaml' 
 
 
+
+
 # attribute data of interest:
+vars = None # TODO allow user to define basin attributes of interest, otherwise default None
+
 # Attribute data location:
 with open(path_config, 'r') as file:
     config = yaml.safe_load(file)
@@ -36,25 +40,21 @@ dir_db_attrs = list([x for x in config['file_io'] if 'dir_db_attrs' in x][0].val
 # parent location of response variable data:
 dir_std_base =  list([x for x in config['file_io'] if 'dir_std_base' in x][0].values())[0].format(dir_base = dir_base)
 
-# base save directroy
-dir_out = Path(Path(dir_base)/Path('../output/'))
-dir_out.mkdir(exist_ok=True)
 
-dir_out_alg_base = Path(dir_out/Path('trained_algorithms'))
-dir_out_alg_base.mkdir(exist_ok=True)
 
-# Identify datasets of interest:
-datasets = list([x for x in config['formulation_metadata'] if 'datasets' in x][0].values())[0]
+# Generate standardized output directories
+out_dirs = fsate.fs_save_algo_dir_struct(dir_base)
+dir_out = out_dirs.get('dir_out')
+dir_out_alg_base = out_dirs.get('dir_out_alg_base')
 
-for ds in datasets: 
-    print(f'PROCESSING {ds} dataset inside \n {dir_std_base}')
 
+config_paths = {'dir_std_base': dir_std_base,}
+
+#def prep_fsds_attr_ds(ds)
+def _open_response_data_fsds(dir_std_base,ds):
     # TODO implement a check to ensure each dataset directory exists
     path_nc = [x for x in Path(dir_std_base/Path(ds)).glob("*.nc") if x.is_file()]
-    
-    dir_out_alg_ds = Path(dir_out_alg_base/Path(ds))
-    dir_out_alg_ds.mkdir(exist_ok=True)
-    #path_zarr = [x for x in Path(dir_std_base/Path(ds)).glob("*.zarr") if x.is_dir()]
+
     try:
         dat_resp = xr.open_dataset(path_nc[0], engine='netcdf4')
     except:
@@ -63,10 +63,40 @@ for ds in datasets:
             dat_resp = xr.open_dataset(path_zarr[0],engine='zarr')
         except:
             raise ValueError(f"Could not identify an approach to read in dataset via {path_nc} nor {path_zarr}")
-    # The metrics approach
+    return dat_resp
 
+
+
+# Identify datasets of interest:
+datasets = list([x for x in config['formulation_metadata'] if 'datasets' in x][0].values())[0]
+
+for ds in datasets: 
+    print(f'PROCESSING {ds} dataset inside \n {dir_std_base}')
+
+    
+    # TODO implement a check to ensure each dataset directory exists
+    dir_out_alg_ds = Path(dir_out_alg_base/Path(ds))
+    dir_out_alg_ds.mkdir(exist_ok=True)
+
+    # # TODO implement a check to ensure each dataset directory exists
+    # path_nc = [x for x in Path(dir_std_base/Path(ds)).glob("*.nc") if x.is_file()]
+
+    # #path_zarr = [x for x in Path(dir_std_base/Path(ds)).glob("*.zarr") if x.is_dir()]
+    # try:
+    #     dat_resp = xr.open_dataset(path_nc[0], engine='netcdf4')
+    # except:
+    #     path_zarr = [x for x in Path(dir_std_base/Path(ds)).glob("*.zarr")]
+    #     try:
+    #         dat_resp = xr.open_dataset(path_zarr[0],engine='zarr')
+    #     except:
+    #         raise ValueError(f"Could not identify an approach to read in dataset via {path_nc} nor {path_zarr}")
+    
+    dat_resp = _open_response_data_fsds(dir_std_base,ds)
+
+    # The metrics approach
     metrics = dat_resp.attrs['metric_mappings'].split('|')
     gage_ids = dat_resp['gage_id'].values
+
 
     # %% COMID retrieval and assignment to response variable's coordinate
     [featureSource,featureID] = fsate._find_feat_srce_id(dat_resp,config)
@@ -81,15 +111,18 @@ for ds in datasets:
 
     # TODO subset based on variables of interest
     # attr_arr = attr_df_sub.to_dask_array(lengths=True)
-    dd_attr = fsate.fs_read_attr_comid(dir_db_attrs, comids_resp, attrs_sel = 'all',_s3 = None,storage_options=None)
+    dd_attr = fsate.fs_read_attr_comid(dir_db_attrs, comids_resp, attrs_sel = 'all',
+                                       _s3 = None,storage_options=None)
 
     # NOTE: additional subsetting may be performed on attr_df here before computing 
     df_attr = dd_attr.compute() # Create a pandas DataFrame
-    vars = df_attr['attribute'].unique()
+    if not vars: # In case the user doesn't specify variables, grab them all
+        vars = df_attr['attribute'].unique() # Extract the catchment attributes of interest
+        # TODO run check that all vars are present for all basins
+
     df_attr_wide = df_attr.pivot(index='featureID', columns = 'attribute', values = 'value')
     dd_resp = dat_resp.to_dask_dataframe()
     
-
     #%% Join attribute data and response data
     rslt_eval = dict()
     for metr in metrics:

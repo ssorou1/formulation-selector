@@ -1,3 +1,4 @@
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error, r2_score
@@ -9,6 +10,8 @@ import dask.dataframe as dd
 import os
 from collections.abc import Iterable
 from typing import List, Optional, Dict
+from pathlib import Path
+import joblib
 
 # %% ATTRIBUTES
 def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list, attrs_sel = 'all',
@@ -63,59 +66,125 @@ def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] 
 
 # %% ALGORITHM TRAINING AND EVALUATION
 class AlgoTrainEval:
-    def __init__(self, algo_config: dict, metr: str = None):
+    def __init__(self, df: pd.DataFrame, vars: Iterable[str], algo_config: dict,
+                 dir_out_alg_ds: str | os.PathLike, dataset_id: str,
+                 metr: str = None, test_size: float = 0.7,rs: int = 32):
+        # class args
+        self.df = df
+        self.vars = vars
         self.algo_config = algo_config
+        self.dir_out_alg_ds = dir_out_alg_ds
         self.metric = metr
-        self.algs_dict = {}
+        self.test_size = test_size
+        self.rs = rs
+        self.dataset_id = dataset_id
 
-    def train_algos(self, X_train: pd.DataFrame, y_train: pd.Series):
+        # train/test split
+        self.X_train = pd.DataFrame()
+        self.X_test = pd.DataFrame()
+        self.y_train = pd.Series()
+        self.y_test = pd.Series()
+        
+        # train/pred/eval metadata
+        self.algs_dict = {}
+        self.preds_dict = {}
+        self.eval_dict = {}
+
+        # The evaluation summary result
+        self.eval_df = pd.DataFrame()
+    def split_data(self):
+        X = self.df[self.vars]
+        y = self.df[self.metric]
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X,y, test_size=self.test_size, random_state=self.rs)
+        
+
+    def train_algos(self):
+
         # Train algorithms based on config
         if 'rf' in self.algo_config:  # RANDOM FOREST
-            rf = RandomForestRegressor(n_estimators=self.algo_config['rf'].pop('n_estimators'),
-                                       random_state=32)
-            rf.fit(X_train, y_train)
+            rf = RandomForestRegressor(n_estimators=self.algo_config['rf'].get('n_estimators'),
+                                       random_state=self.rs)
+            rf.fit(self.X_train, self.y_train)
             self.algs_dict['rf'] = {'algo': rf,
                                     'type': 'random forest regressor',
                                     'metric': self.metric}
 
         if 'mlp' in self.algo_config:  # MULTI-LAYER PERCEPTRON
             mlpcfg = self.algo_config['mlp']
-            mlp = MLPRegressor(random_state=32,
-                               hidden_layer_sizes=mlpcfg.pop('hidden_layer_sizes', (100,)),
-                               activation=mlpcfg.pop('activation', 'relu'),
-                               solver=mlpcfg.pop('solver', 'lbfgs'),
-                               alpha=mlpcfg.pop('alpha', 0.001),
-                               batch_size=mlpcfg.pop('batch_size', 'auto'),
-                               learning_rate=mlpcfg.pop('learning_rate', 'constant'),
-                               power_t=mlpcfg.pop('power_t', 0.5),
-                               max_iter=mlpcfg.pop('max_iter', 200))
-            mlp.fit(X_train, y_train)
+            mlp = MLPRegressor(random_state=self.rs,
+                               hidden_layer_sizes=mlpcfg.get('hidden_layer_sizes', (100,)),
+                               activation=mlpcfg.get('activation', 'relu'),
+                               solver=mlpcfg.get('solver', 'lbfgs'),
+                               alpha=mlpcfg.get('alpha', 0.001),
+                               batch_size=mlpcfg.get('batch_size', 'auto'),
+                               learning_rate=mlpcfg.get('learning_rate', 'constant'),
+                               power_t=mlpcfg.get('power_t', 0.5),
+                               max_iter=mlpcfg.get('max_iter', 200))
+            mlp.fit(self.X_train, self.y_train)
             self.algs_dict['mlp'] = {'algo': mlp,
                                      'type': 'multi-layer perceptron regressor',
                                      'metric': self.metric}
 
-        return self.algs_dict
-
-    def predict_algos(self, X_test: pd.DataFrame):
+    def predict_algos(self):
         # Make predictions with trained algorithms
-        preds_dict = {}
+        
         for k, v in self.algs_dict.items():
             algo = v['algo']
-            y_pred = algo.predict(X_test)
-            preds_dict[k] = {'y_pred': y_pred,
+            y_pred = algo.predict(self.X_test)
+            self.preds_dict[k] = {'y_pred': y_pred,
                              'type': v['type'],
                              'metric': v['metric']}
-        return preds_dict
+        return self.preds_dict
 
-    def evaluate_algos(self, y_test: pd.Series, preds_dict: dict):
+    def evaluate_algos(self):
         # Evaluate the predictions
-        eval_dict = {}
-        for k, v in preds_dict.items():
+        # TODO add more evaluation metrics here
+        for k, v in self.preds_dict.items():
             y_pred = v['y_pred']
-            eval_dict[k] = {'type': v['type'],
+            self.eval_dict[k] = {'type': v['type'],
                             'metric': v['metric'],
-                            'mse': mean_squared_error(y_test, y_pred),
-                            'r2': r2_score(y_test, y_pred)}
-        return eval_dict
+                            'mse': mean_squared_error(self.y_test, y_pred),
+                            'r2': r2_score(self.y_test, y_pred)}
+        return self.eval_dict
 
+    def save_algos(self):
+        # Write algorithm to file & record save path in algs_dict['loc_algo']
+        for algo in self.algs_dict.keys():
+            print(f"      Saving {algo} for {self.metric} to file")
 
+            basename_alg_ds_metr = f'algo_{algo}_{self.metric}__{self.dataset_id}'
+            path_algo = Path(self.dir_out_alg_ds) / Path(basename_alg_ds_metr + '.joblib')
+            # write trained algorithm
+            joblib.dump(self.algs_dict[algo]['algo'], path_algo)
+            self.algs_dict[algo]['loc_algo'] = path_algo
+   
+    def org_metadata_alg(self):
+        # Must be called after running AlgoTrainEval.save_algos()
+        # Record location of trained algorithm
+        self.eval_df = pd.DataFrame(self.eval_dict).transpose().rename_axis(index='algorithm')
+        # Assign the locations where algorithms were saved
+        self.eval_df['loc_algo'] = [self.algs_dict[alg]['loc_algo'] for alg in self.algs_dict.keys()] 
+    
+    
+    def train_eval(self):
+        # Overall train, test, evaluation wrapper
+
+        # Run the train/test split
+        self.split_data()
+
+        # Train algorithms # returns self.algs_dict 
+        self.train_algos()
+
+        # Make predictions  # 
+        self.predict_algos()
+
+        # Evaluate predictions # returns self.eval_dict
+        self.evaluate_algos()
+
+        # Write algorithms to file # returns self.algs_dict_paths
+        self.save_algos()
+
+        # Generate metadata dataframe
+        self.org_metadata_alg() # Must be called after trainer.save_algos()
+        
+# %%

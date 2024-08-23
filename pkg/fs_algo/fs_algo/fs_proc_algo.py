@@ -5,6 +5,7 @@ import pandas as pd
 from pathlib import Path
 import xarray as xr
 from fs_algo.fs_algo_train_eval import AlgoTrainEval, _find_feat_srce_id, fs_retr_nhdp_comids, fs_read_attr_comid
+import joblib
 
 # Read in yaml file
 path_config =  '/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_attr_config.yaml' 
@@ -24,7 +25,7 @@ algo_config = {'rf': {'n_estimators':100},
                              'batch_size':'auto',
                              'learning_rate':'constant',
                              'power_t':0.5,
-                             'max_iter':200000,
+                             'max_iter':20000,
                              }}
 
 
@@ -36,14 +37,24 @@ dir_db_attrs = list([x for x in config['file_io'] if 'dir_db_attrs' in x][0].val
 # parent location of response variable data:
 dir_std_base =  list([x for x in config['file_io'] if 'dir_std_base' in x][0].values())[0].format(dir_base = dir_base)
 
+# base save directroy
+dir_out = Path(Path(dir_base)/Path('../output/'))
+dir_out.mkdir(exist_ok=True)
+
+dir_out_alg_base = Path(dir_out/Path('trained_algorithms'))
+dir_out_alg_base.mkdir(exist_ok=True)
+
 # Identify datasets of interest:
 datasets = list([x for x in config['formulation_metadata'] if 'datasets' in x][0].values())[0]
 
 for ds in datasets: 
-    print(f'Processing {ds} dataset inside {dir_std_base}')
+    print(f'PROCESSING {ds} dataset inside \n {dir_std_base}')
+
     # TODO implement a check to ensure each dataset directory exists
     path_nc = [x for x in Path(dir_std_base/Path(ds)).glob("*.nc") if x.is_file()]
     
+    dir_out_alg_ds = Path(dir_out_alg_base/Path(ds))
+    dir_out_alg_ds.mkdir(exist_ok=True)
     #path_zarr = [x for x in Path(dir_std_base/Path(ds)).glob("*.zarr") if x.is_dir()]
     try:
         dat_resp = xr.open_dataset(path_nc[0], engine='netcdf4')
@@ -81,8 +92,9 @@ for ds in datasets:
     
 
     #%% Join attribute data and response data
+    rslt_eval = dict()
     for metr in metrics:
-        print(f'...Processing {metr}')
+        print(f' - Processing {metr}')
         # Subset response data to metric of interest & the comid
         df_metr_resp = pd.DataFrame({'comid': dat_resp['comid'],
                                      metr : dat_resp[metr].data})
@@ -91,26 +103,45 @@ for ds in datasets:
 
         # %% TRAIN ALGORITHMS AND EVALUATE PERFORMANCE
         # Train/test split
-        X = df_pred_resp[vars]
-        y = df_pred_resp[metr]
-        X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.3, random_state=32)
-
+  
         alg_cfig = algo_config.copy() # Back up the original model config before popping
 
         # Initialize the trainer with algo_config and metric
         trainer = AlgoTrainEval(algo_config={'rf': {'n_estimators': 100}, 
                                                 'mlp': {'hidden_layer_sizes': (100,), 'max_iter': 300}},
-                                metr='accuracy')
+                                metr=metr)
 
-        # Train algorithms
-        algs_dict = trainer.train_algos(X_train, y_train)
+        def train__eval(self):
 
-        # Make predictions
-        preds_dict = trainer.predict_algos(X_test)
+            # Train algorithms
+            algs_dict = trainer.train_algos(X_train, y_train)
 
-        # Evaluate predictions
-        eval_dict = trainer.evaluate_algos(y_test, preds_dict)
+            # Make predictions
+            preds_dict = trainer.predict_algos(X_test)
 
+            # Evaluate predictions
+            eval_dict = trainer.evaluate_algos(y_test, preds_dict)
+
+            # Write algorithms to file
+            algs_dict_paths = trainer.save_algos(ds)
+
+            # Generate metadata dataframe
+            eval_df = trainer.org_metadata_alg() # Must be called after trainer.save_algos()
+
+        # eval_df = pd.DataFrame(eval_dict).transpose().rename_axis(index='algorithm')
+        # eval_df['loc_algo'] = pd.NA
+        
+        
+
+
+        # Record location of trained algorithm
+        eval_df['loc_algo'] = [algs_dict[alg]['loc_algo'] for alg in algs_dict.keys()] 
+        rslt_eval[metr] = eval_df
+
+    rslt_eval_df = pd.concat(rslt_eval).reset_index(drop=True)
+    rslt_eval_df['dataset'] = ds
+    rslt_eval_df['']
+    rslt_eval_df.to_parquet(Path(dir_out_alg_ds)/Path('algo_eval_'+ds+'.parquet'))
     print(f'... Finish processing {ds}')
 
 dat_resp.close()

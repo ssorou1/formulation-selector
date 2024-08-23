@@ -23,6 +23,9 @@ if __name__ == "__main__":
     name_attr_config = algo_cfg.get('name_attr_config', Path(path_algo_config).name.replace('algo','attr'))
     path_attr_config = Path(Path(path_algo_config).parent/name_attr_config)
 
+
+
+
     if not path_algo_config.exists():
         raise ValueError(f"Ensure that 'name_attr_config' as defined inside {path_algo_config.name} \
                           \n is also in the same directory as the algo config file {path_algo_config.parent}" )
@@ -37,13 +40,15 @@ if __name__ == "__main__":
     # dir_std_base =  list([x for x in attr_config['file_io'] if 'dir_std_base' in x][0].values())[0].format(dir_base = dir_base)
 
 
-    
-    attrs_cfg_dict = fsate._read_attr_config(path_attr_config)
-    attrs_sel = attrs_cfg_dict.get('attrs_sel')
-    dir_db_attrs = attrs_cfg_dict.get('dir_db_attrs')
-    dir_std_base = attrs_cfg_dict.get('dir_std_base')
-    dir_base = attrs_cfg_dict.get('dir_base')
-    datasets = attrs_cfg_dict.get('datasets') # Identify datasets of interest
+    # Initialize attribute configuration class for extracting attributes
+    attr_cfig = fsate.AttrConfigAndVars(path_attr_config)
+    attr_cfig._read_attr_config()
+
+    attrs_sel = attr_cfig.attrs_cfg_dict.get('attrs_sel')
+    dir_db_attrs = attr_cfig.attrs_cfg_dict.get('dir_db_attrs')
+    dir_std_base = attr_cfig.attrs_cfg_dict.get('dir_std_base')
+    dir_base = attr_cfig.attrs_cfg_dict.get('dir_base')
+    datasets = attr_cfig.attrs_cfg_dict.get('datasets') # Identify datasets of interest
     # # TODO create a model configuration file
     # algo_config = {'rf': {'n_estimators':100},
     #                 'mlp': {'hidden_layer_sizes' :(4,),
@@ -62,8 +67,6 @@ if __name__ == "__main__":
     dir_out_alg_base = fsate.fs_save_algo_dir_struct(dir_base).get('dir_out_alg_base')
 
     
-
-
     for ds in datasets: 
         print(f'PROCESSING {ds} dataset inside \n {dir_std_base}')
 
@@ -77,7 +80,7 @@ if __name__ == "__main__":
         metrics = dat_resp.attrs['metric_mappings'].split('|')
 
         # %% COMID retrieval and assignment to response variable's coordinate
-        [featureSource,featureID] = fsate._find_feat_srce_id(dat_resp,attr_config) # e.g. ['nwissite','USGS-{gage_id}']
+        [featureSource,featureID] = fsate._find_feat_srce_id(dat_resp,attr_cfig.attr_config) # e.g. ['nwissite','USGS-{gage_id}']
         comids_resp = fsate.fs_retr_nhdp_comids(featureSource,featureID,gage_ids=dat_resp['gage_id'].values)
         dat_resp = dat_resp.assign_coords(comid = comids_resp)
 
@@ -114,7 +117,8 @@ if __name__ == "__main__":
 
             # Instantiate the training, testing, and evaluation class
             train_eval = fsate.AlgoTrainEval(df=df_pred_resp,
-                                        vars=vars,algo_config=algo_config,
+                                        vars=attrs_sel,
+                                        algo_config=algo_config,
                                         dir_out_alg_ds=dir_out_alg_ds, dataset_id=ds,
                                         metr=metr,test_size=0.7, rs = 32)
             train_eval.train_eval() # Train, test, eval wrapper

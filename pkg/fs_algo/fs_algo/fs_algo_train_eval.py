@@ -16,6 +16,45 @@ import itertools
 import yaml
 
 # %% BASIN ATTRIBUTES (PREDICTORS) & RESPONSE VARIABLES (e.g. METRICS)
+class AttrConfigAndVars:
+    def __init__(self, path_attr_config: str | os.PathLike):
+        self.path_attr_config = path_attr_config
+        self.attrs_cfg_dict = dict()
+        self.attr_config = dict()
+
+    def _read_attr_config(self ) -> dict:
+        # Extract the desired basin attribute variable names from yaml file
+
+        # Attribute data location:
+        with open(self.path_attr_config, 'r') as file:
+            self.attr_config = yaml.safe_load(file)
+
+        # identify attribute data of interest from attr_config
+        attrs_all = [v for x in self.attr_config['attr_select'] for k,v in x.items() if '_vars' in k]
+        attrs_sel = [x for x in list(itertools.chain(*attrs_all)) if x is not None]
+
+        if len(attrs_sel) == None: # If no attributes generated, assume all attributes are of interest
+            attrs_sel = 'all'
+            raise Warning(f"No attributes discerned from 'attr_select' inside ")
+        
+        home_dir = str(Path.home())
+        dir_base = list([x for x in self.attr_config['file_io'] if 'dir_base' in x][0].values())[0].format(home_dir=home_dir)
+        # Location of attributes (predictor data):
+        dir_db_attrs = list([x for x in self.attr_config['file_io'] if 'dir_db_attrs' in x][0].values())[0].format(dir_base = dir_base)
+
+        # parent location of response variable data:
+        dir_std_base =  list([x for x in self.attr_config['file_io'] if 'dir_std_base' in x][0].values())[0].format(dir_base = dir_base)
+
+        # The datasets of interest
+        datasets = list([x for x in self.attr_config['formulation_metadata'] if 'datasets' in x][0].values())[0]
+        # Compile output
+        self.attrs_cfg_dict = {'attrs_sel' : attrs_sel,
+                            'dir_db_attrs': dir_db_attrs,
+                            'dir_std_base': dir_std_base,
+                            'dir_base': dir_base,
+                            'datasets': datasets}
+
+
 def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list, attrs_sel = 'all',
                        _s3 = None,storage_options=None)-> dask_expr._collection.DataFrame:
     if _s3:
@@ -53,6 +92,9 @@ def _check_attributes_exist(df_attr: pd.DataFrame, vars:pd.Series | Iterable):
         \n Missing attributes include: {', '.join(missing_vars)}"
 
         raise Warning(warn_msg_missing_vars)
+
+
+
 
 def _find_feat_srce_id(dat_resp: Optional[xr.core.dataset.Dataset] = None,
                        attr_config: Optional[Dict] = None) -> List[str]:
@@ -93,39 +135,6 @@ def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] 
 
     return comids_resp
 
-def _read_attr_config(path_attr_config: str | os.PathLike ) -> dict:
-    # Extract the desired basin attribute variable names from yaml file
-
-    # Attribute data location:
-    with open(path_attr_config, 'r') as file:
-        attr_config = yaml.safe_load(file)
-
-    # identify attribute data of interest from attr_config
-    attrs_all = [v for x in attr_config['attr_select'] for k,v in x.items() if '_vars' in k]
-    attrs_sel = [x for x in list(itertools.chain(*attrs_all)) if x is not None]
-
-    if len(attrs_sel) == None: # If no attributes generated, assume all attributes are of interest
-        attrs_sel = 'all'
-        raise Warning(f"No attributes discerned from 'attr_select' inside ")
-    
-    home_dir = str(Path.home())
-    dir_base = list([x for x in attr_config['file_io'] if 'dir_base' in x][0].values())[0].format(home_dir=home_dir)
-    # Location of attributes (predictor data):
-    dir_db_attrs = list([x for x in attr_config['file_io'] if 'dir_db_attrs' in x][0].values())[0].format(dir_base = dir_base)
-
-    # parent location of response variable data:
-    dir_std_base =  list([x for x in attr_config['file_io'] if 'dir_std_base' in x][0].values())[0].format(dir_base = dir_base)
-
-    # The datasets of interest
-    datasets = list([x for x in attr_config['formulation_metadata'] if 'datasets' in x][0].values())[0]
-    # Compile output
-    attrs_cfg_dict = {'attrs_sel' : attrs_sel,
-                        'dir_db_attrs': dir_db_attrs,
-                        'dir_std_base': dir_std_base,
-                        'dir_base': dir_base,
-                        'datasets': datasets}
-
-    return attrs_cfg_dict
 
 def fs_save_algo_dir_struct(dir_base: str | os.PathLike ) -> dict:
 
@@ -167,7 +176,8 @@ def _open_response_data_fsds(dir_std_base,ds):
 class AlgoTrainEval:
     def __init__(self, df: pd.DataFrame, vars: Iterable[str], algo_config: dict,
                  dir_out_alg_ds: str | os.PathLike, dataset_id: str,
-                 metr: str = None, test_size: float = 0.7,rs: int = 32):
+                 metr: str = None, test_size: float = 0.7,rs: int = 32,
+                 verbose: bool = False):
         # class args
         self.df = df
         self.vars = vars
@@ -177,6 +187,7 @@ class AlgoTrainEval:
         self.test_size = test_size
         self.rs = rs
         self.dataset_id = dataset_id
+        self.verbose = verbose
 
         # train/test split
         self.X_train = pd.DataFrame()
@@ -192,6 +203,9 @@ class AlgoTrainEval:
         # The evaluation summary result
         self.eval_df = pd.DataFrame()
     def split_data(self):
+        if(self.verbose):
+            print(f"Performing train/test split as {test_size}/{1-test_size}")
+
         X = self.df[self.vars]
         y = self.df[self.metric]
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X,y, test_size=self.test_size, random_state=self.rs)

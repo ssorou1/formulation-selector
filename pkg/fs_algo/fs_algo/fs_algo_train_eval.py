@@ -95,8 +95,6 @@ def _check_attributes_exist(df_attr: pd.DataFrame, vars:pd.Series | Iterable):
         raise warnings.warn(warn_msg_missing_vars)
 
 
-
-
 def _find_feat_srce_id(dat_resp: Optional[xr.core.dataset.Dataset] = None,
                        attr_config: Optional[Dict] = None) -> List[str]:
     # Attempt to grab dataset attributes (in cases where it differs by dataset), fallback on config file

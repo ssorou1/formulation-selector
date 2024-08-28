@@ -9,6 +9,7 @@ example
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
 import pandas as pd
+import dask.dataframe as dd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import train_test_split
@@ -16,8 +17,53 @@ from sklearn.metrics import mean_squared_error, r2_score
 import tempfile
 from pathlib import Path
 from fs_algo.fs_algo_train_eval import AlgoTrainEval, AttrConfigAndVars
+from fs_algo import fs_algo_train_eval
+
+
+
+# Define the unit test directory for fsds_proc
+parent_dir_test = Path(__file__).parent #TODO should change this 
+print(f'Running unit test from {parent_dir_test}')
+# Define the unit test saving directory as a temp dir
+dir_save = tempfile.gettempdir()
+
 
 # %% UNIT TESTING FOR NHDplus/dataset munging
+
+class TestFsReadAttrComid(unittest.TestCase):
+
+    @patch('fs_algo.fs_algo_train_eval.dd.read_parquet')
+    def test_fs_read_attr_comid(self, mock_read_parquet):
+        # Mock DataFrame
+        mock_pdf = pd.DataFrame({
+            'data_source': 'hydroatlas__v1',
+            'dl_timestamp': '2024-07-26 08:59:36',
+            'attribute': ['pet_mm_s01', 'cly_pc_sav'],
+            'value': [58, 21],
+            'featureID': '1520007',
+            'featureSource': 'COMID'
+        })
+        
+        mock_ddf = dd.from_pandas(mock_pdf, npartitions=1)
+        mock_read_parquet.return_value = mock_ddf
+
+        dir_db_attrs = 'mock_dir'
+        comids_resp = ['1520007']
+        attrs_sel = 'all'
+        
+        result = fs_algo_train_eval.fs_read_attr_comid(dir_db_attrs, comids_resp, attrs_sel)
+
+        # Assertions
+        self.assertTrue(mock_read_parquet.called)
+        self.assertEqual(result.compute().shape[0], 2)
+        self.assertIn('1520007', result.compute()['featureID'].values)
+        self.assertIn('pet_mm_s01', result.compute()['attribute'].values)
+        self.assertIn('COMID',result.compute()['featureSource'].values )
+        self.assertIn('value',result.compute().columns )
+        self.assertIn('data_source',result.compute().columns )
+
+if __name__ == '__main__':
+    unittest.main(argv=['first-arg-is-ignored'], exit=False)
 
 # %% UNIT TESTING FOR AttrConfigAndVars
 

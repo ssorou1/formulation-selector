@@ -56,7 +56,7 @@ class AttrConfigAndVars:
                             'datasets': datasets}
 
 
-def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list, attrs_sel = 'all',
+def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list, attrs_sel: str | Iterable = 'all',
                        _s3 = None,storage_options=None)-> dask_expr._collection.DataFrame:
     if _s3:
         storage_options={"anon",True} # for public
@@ -64,17 +64,26 @@ def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list, attrs_s
         #_s3 = s3fs.S3FileSystem(anon=True)
 
     # Read attribute data acquired using fsds.attr.hydfab R package
-    all_attr_df = dd.read_parquet(dir_db_attrs, storage_options = storage_options)
+    all_attr_ddf = dd.read_parquet(dir_db_attrs, storage_options = storage_options)
 
     # Subset based on comids of interest
-    attr_df_subloc = all_attr_df[all_attr_df['featureID'].str.contains('|'.join(comids_resp))]
+    attr_ddf_subloc = all_attr_ddf[all_attr_ddf['featureID'].str.contains('|'.join(comids_resp))]
 
+    if attr_ddf_subloc.shape[0].compute() == 0:
+        warnings.warn(f'None of the provided featureIDs exist in {dir_db_attrs}: {', '.join(attrs_sel)} ')
+    
+
+    # Subset based on attributes of interest
     if attrs_sel == 'all':
         # TODO shold figure out which attributes are common across all data when using 'all'
-        attrs_sel = attr_df_subloc['attribute'].unique().compute()
+        attrs_sel = attr_ddf_subloc['attribute'].unique().compute()
 
-    attr_df_sub = attr_df_subloc[attr_df_subloc['attribute'].str.contains('|'.join(attrs_sel))]
-    return attr_df_sub
+    attr_ddf_sub = attr_ddf_subloc[attr_ddf_subloc['attribute'].str.contains('|'.join(attrs_sel))]
+    
+    if attr_ddf_sub.shape[0].compute() == 0:
+        warnings.warn(f'The provided attributes do not exist with the retrieved featureIDs : {','.join(attrs_sel)}')
+    
+    return attr_ddf_sub
 
 def _check_attributes_exist(df_attr: pd.DataFrame, vars:pd.Series | Iterable):
     # Run check that all vars are present for all basins

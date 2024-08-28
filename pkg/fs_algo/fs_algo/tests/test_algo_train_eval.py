@@ -31,7 +31,6 @@ dir_save = tempfile.gettempdir()
 # %% UNIT TESTING FOR NHDplus/dataset munging
 
 class TestFsReadAttrComid(unittest.TestCase):
-
     @patch('fs_algo.fs_algo_train_eval.dd.read_parquet')
     def test_fs_read_attr_comid(self, mock_read_parquet):
         # Mock DataFrame
@@ -51,7 +50,7 @@ class TestFsReadAttrComid(unittest.TestCase):
         comids_resp = ['1520007']
         attrs_sel = 'all'
         
-        result = fs_algo_train_eval.fs_read_attr_comid(dir_db_attrs, comids_resp, attrs_sel)
+        result = fs_algo_train_eval.fs_read_attr_comid(dir_db_attrs=dir_db_attrs, comids_resp=comids_resp, attrs_sel=attrs_sel)
 
         # Assertions
         self.assertTrue(mock_read_parquet.called)
@@ -62,6 +61,23 @@ class TestFsReadAttrComid(unittest.TestCase):
         self.assertIn('value',result.compute().columns )
         self.assertIn('data_source',result.compute().columns )
 
+        # When only one attribute requested
+        single_result = fs_algo_train_eval.fs_read_attr_comid(dir_db_attrs=dir_db_attrs,
+                                                              comids_resp= comids_resp,attrs_sel= ['pet_mm_s01'])
+        self.assertIn('pet_mm_s01',single_result.compute()['attribute'].values)
+        self.assertNotIn('cly_pc_sav',single_result.compute()['attribute'].values)
+
+        # When COMID requested that doesn't exist
+        with self.assertWarns(UserWarning):
+                fs_algo_train_eval.fs_read_attr_comid(dir_db_attrs=dir_db_attrs,
+                                                              comids_resp= ['010101010'],
+                                                              attrs_sel= ['pet_mm_s01'])
+
+        # # When attribute requested that doesn't exist
+        with self.assertWarns(UserWarning):
+            fs_algo_train_eval.fs_read_attr_comid(dir_db_attrs=dir_db_attrs,
+                                            comids_resp= comids_resp,
+                                            attrs_sel= ['nonexistent'])
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
 

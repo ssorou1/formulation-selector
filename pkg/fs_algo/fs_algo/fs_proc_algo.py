@@ -30,6 +30,8 @@ if __name__ == "__main__":
     name_attr_config = algo_cfg.get('name_attr_config', Path(path_algo_config).name.replace('algo','attr'))
     path_attr_config = Path(Path(path_algo_config).parent/name_attr_config)
     verbose = algo_cfg['verbose']
+    test_size = algo_cfg['test_size']
+    seed = algo_cfg['seed']
 
     if not path_algo_config.exists():
         raise ValueError(f"Ensure that 'name_attr_config' as defined inside {path_algo_config.name} \
@@ -86,12 +88,14 @@ if __name__ == "__main__":
             # Join attribute data and response data
             df_pred_resp = df_metr_resp.merge(df_attr_wide, left_on = 'comid', right_on = 'featureID')
 
+            # TODO may need to add additional distinguishing strings to dataset_id, e.g. in cases of probabilistic simulation
+
             # Instantiate the training, testing, and evaluation class
             train_eval = fsate.AlgoTrainEval(df=df_pred_resp,
-                                        vars=attrs_sel,
+                                        attrs=attrs_sel,
                                         algo_config=algo_config,
                                         dir_out_alg_ds=dir_out_alg_ds, dataset_id=ds,
-                                        metr=metr,test_size=0.7, rs = 32,
+                                        metr=metr,test_size=test_size, rs = seed,
                                         verbose=verbose)
             train_eval.train_eval() # Train, test, eval wrapper
             

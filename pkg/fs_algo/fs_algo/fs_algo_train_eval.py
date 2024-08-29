@@ -70,39 +70,52 @@ def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list, attrs_s
     attr_ddf_subloc = all_attr_ddf[all_attr_ddf['featureID'].str.contains('|'.join(comids_resp))]
 
     if attr_ddf_subloc.shape[0].compute() == 0:
-        warnings.warn(f'None of the provided featureIDs exist in {dir_db_attrs}: {', '.join(attrs_sel)} ')
+        warnings.warn(f'None of the provided featureIDs exist in {dir_db_attrs}: \
+                      \n {', '.join(attrs_sel)} ', UserWarning)
     
-
     # Subset based on attributes of interest
     if attrs_sel == 'all':
-        # TODO shold figure out which attributes are common across all data when using 'all'
         attrs_sel = attr_ddf_subloc['attribute'].unique().compute()
 
     attr_ddf_sub = attr_ddf_subloc[attr_ddf_subloc['attribute'].str.contains('|'.join(attrs_sel))]
     
     if attr_ddf_sub.shape[0].compute() == 0:
-        warnings.warn(f'The provided attributes do not exist with the retrieved featureIDs : {','.join(attrs_sel)}')
+        warnings.warn(f'The provided attributes do not exist with the retrieved featureIDs : \
+                      \n {','.join(attrs_sel)}',UserWarning)
     
+    # Run check that all variables are present across all basins
+    dict_rslt = _check_attributes_exist(attr_ddf_sub.compute(),attrs_sel)
+    attr_df_sub, attrs_sel_ser = dict_rslt['df_attr'], dict_rslt['attrs_sel']
+
     return attr_ddf_sub
 
-def _check_attributes_exist(df_attr: pd.DataFrame, vars:pd.Series | Iterable):
-    # Run check that all vars are present for all basins
+def _check_attributes_exist(df_attr: pd.DataFrame, attrs_sel:pd.Series | Iterable) -> Dict[pd.DataFrame, pd.Series]:
+    
+    # Checks if any COMIDs have different numbers of attributes 
+    if not isinstance(attrs_sel,pd.Series):
+            # Convert to a series for convenience of pd.Series.isin()
+            attrs_sel = pd.Series(attrs_sel)
+
+    # Run check that all attributes are present for all basins
     if df_attr.groupby('featureID')['attribute'].count().nunique() != 1:
-        vec_missing = df_attr.groupby('featureID')['attribute'].count() != len(vars)
+        
+        # multiple combos of comid/attrs exist. Find them and warn about it.
+        vec_missing = df_attr.groupby('featureID')['attribute'].count() != len(attrs_sel)
         bad_comids = vec_missing.index.values
         
         df_attr_sub_missing = df_attr[df_attr['featureID'].isin(bad_comids)]
 
-        missing_vars = vars[~vars.isin(df_attr_sub_missing['attribute'])]
+        missing_attrs = attrs_sel[~attrs_sel.isin(df_attr_sub_missing['attribute'])]
 
-        warn_msg_missing_vars = f"Not all featureID groupings (i.e. COMID groups) contain \
+        warn_msg_missing_attrs = f"Not all featureID groupings (i.e. COMID groups) contain \
         the same number of catchment attributes. \
         \n This could be problematic for model training. \
         \n Consider running attribute grabber with fsds.attr.hydfab. \
-        \n Missing attributes include: {', '.join(missing_vars)}"
+        \n Missing attributes include: {', '.join(missing_attrs)}"
 
-        raise warnings.warn(warn_msg_missing_vars)
-
+        warnings.warn(warn_msg_missing_attrs,UserWarning)
+    
+    return {'df_attr': df_attr, 'attrs_sel': attrs_sel}
 
 def _find_feat_srce_id(dat_resp: Optional[xr.core.dataset.Dataset] = None,
                        attr_config: Optional[Dict] = None) -> List[str]:
@@ -110,18 +123,24 @@ def _find_feat_srce_id(dat_resp: Optional[xr.core.dataset.Dataset] = None,
     featureSource = None
     try: # dataset attributes first
         featureSource = dat_resp.attrs.get('featureSource', None)
-    except (KeyError, StopIteration): # config file second
-        featureSource = next(x['featureSource'] for x in attr_config['col_schema'] if 'featureSource' in x)
+    except (KeyError, StopIteration,AttributeError): # config file second
+        try: 
+            featureSource = next(x['featureSource'] for x in attr_config['col_schema'] if 'featureSource' in x)
+        except:
+            pass
     if not featureSource:
-        raise ValueError(f'The featureSource could not be found. Ensure it is present in the col_schema section {path_config}')
+        raise ValueError(f'The featureSource could not be found. Ensure it is present in the col_schema section of the attribute config file.')
     # Attempt to grab featureID from dataset attributes, fallback to the config file
     featureID = None
     try: # dataset attributes first
         featureID = dat_resp.attrs.get('featureID', None)
-    except (KeyError, StopIteration): # config file second
-        featureID = next(x['featureID'] for x in attr_config['col_schema'] if 'featureID' in x)
+    except (KeyError, StopIteration,AttributeError): # config file second
+        try:
+            featureID = next(x['featureID'] for x in attr_config['col_schema'] if 'featureID' in x)
+        except:
+            pass
     if not featureID:
-        raise ValueError(f'The featureID could not be found. Ensure it is present in the col_schema section of {path_config}')
+        raise ValueError(f'The featureID could not be found. Ensure it is present in the col_schema section of the attribute config file.')
         # TODO need to map gage_id to location identifier in attribute data!
 
     return [featureSource, featureID]
@@ -137,7 +156,7 @@ def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] 
                                 ).loc[0]['nhdplus_comid'] 
                                 for gage_id in gage_ids]
     
-    if len(comids_resp) != len(gage_ids) or comids_resp.count(None) > 0:
+    if len(comids_resp) != len(gage_ids) or comids_resp.count(None) > 0: # May not be an important check
         raise warnings.warn("The total number of retrieved comids does not match \
                       total number of provided gage_ids")
 

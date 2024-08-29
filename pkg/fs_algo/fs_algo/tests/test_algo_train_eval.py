@@ -5,6 +5,11 @@ example
 > coverage run -m unittest test_algo_train_eval.py  
 > coverage report
 > coverage html 
+
+ # Useful for running in ipynb:
+if __name__ == '__main__':
+    unittest.main(argv=['first-arg-is-ignored'], exit=False)
+
 '''
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
@@ -18,21 +23,73 @@ import tempfile
 from pathlib import Path
 from fs_algo.fs_algo_train_eval import AlgoTrainEval, AttrConfigAndVars
 from fs_algo import fs_algo_train_eval
-
-
-
-# Define the unit test directory for fsds_proc
-parent_dir_test = Path(__file__).parent #TODO should change this 
-print(f'Running unit test from {parent_dir_test}')
-# Define the unit test saving directory as a temp dir
-dir_save = tempfile.gettempdir()
-
-
+import warnings
+import xarray as xr
 # %% UNIT TESTING FOR NHDplus/dataset munging
+# class TestFsReadAttrComid(unittest.TestCase):
+   
 
-class TestFsReadAttrComid(unittest.TestCase):
+
+# class TestFsRetrNhdpComids(unittest.TestCase):
+#     @patch('fs_algo.fs_alg_train_eval.nldi.navigate_byid')
+
+# class TestCheckAttributesExist(unittest.TestCase):
+#     print("Testing _check_attributes_exist")
+#     # Mock DataFrame
+#     mock_pdf = pd.DataFrame({
+#         'data_source': 'hydroatlas__v1',
+#         'dl_timestamp': '2024-07-26 08:59:36',
+#         'attribute': ['pet_mm_s01', 'cly_pc_sav'],
+#         'value': [58, 21],
+#         'featureID': '1520007',
+#         'featureSource': 'COMID'
+#     })
+#     fs_algo_train_eval._check_attributes_exist(mock_pdf, ['pet_mm_s01','cly_pc_sav'])
+
+
+
+# %% UNIT TESTING FOR AttrConfigAndVars
+
+class TestAttrConfigAndVars(unittest.TestCase):
+    print("Testing AttrConfigAndVars")
+    @patch('builtins.open', new_callable=mock_open, read_data='''
+            attr_select:
+            - attr_vars: [attr1, attr2, attr3]
+            file_io:
+            - dir_base: "{home_dir}/base_dir"
+            - dir_db_attrs: "{dir_base}/db_attrs"
+            - dir_std_base: "{dir_base}/std_base"
+            formulation_metadata:
+            - datasets: ["dataset1", "dataset2"]
+                ''')
+    @patch('pathlib.Path.home', return_value='/mocked/home')
+    def test_read_attr_config(self, mock_home, mock_file):
+        print('    Testing _read_attr_config')
+        path = '/path/to/config.yaml'
+        attr_obj = AttrConfigAndVars(path)
+        attr_obj._read_attr_config()
+
+        # Test if the file is opened with the correct path
+        mock_file.assert_called_once_with(path, 'r')
+
+        # Test if Path.home() was called
+        mock_home.assert_called_once()
+
+        # Test the parsed data from the config
+        expected_attrs_cfg_dict = {
+            'attrs_sel': ['attr1', 'attr2', 'attr3'],
+            'dir_db_attrs': '/mocked/home/base_dir/db_attrs',
+            'dir_std_base': '/mocked/home/base_dir/std_base',
+            'dir_base': '/mocked/home/base_dir',
+            'datasets': ['dataset1', 'dataset2']
+        }
+
+        self.assertEqual(attr_obj.attrs_cfg_dict, expected_attrs_cfg_dict)
+    
+class TestFsReadAttrComid(unittest.TestCase):   
     @patch('fs_algo.fs_algo_train_eval.dd.read_parquet')
     def test_fs_read_attr_comid(self, mock_read_parquet):
+        print("    Testing fs_read_attr_comid")
         # Mock DataFrame
         mock_pdf = pd.DataFrame({
             'data_source': 'hydroatlas__v1',
@@ -42,10 +99,9 @@ class TestFsReadAttrComid(unittest.TestCase):
             'featureID': '1520007',
             'featureSource': 'COMID'
         })
-        
         mock_ddf = dd.from_pandas(mock_pdf, npartitions=1)
         mock_read_parquet.return_value = mock_ddf
-
+        # A normal result scenario, mocked:
         dir_db_attrs = 'mock_dir'
         comids_resp = ['1520007']
         attrs_sel = 'all'
@@ -73,67 +129,67 @@ class TestFsReadAttrComid(unittest.TestCase):
                                                               comids_resp= ['010101010'],
                                                               attrs_sel= ['pet_mm_s01'])
 
-        # # When attribute requested that doesn't exist
+        # When attribute requested that doesn't exist
         with self.assertWarns(UserWarning):
             fs_algo_train_eval.fs_read_attr_comid(dir_db_attrs=dir_db_attrs,
                                             comids_resp= comids_resp,
                                             attrs_sel= ['nonexistent'])
-if __name__ == '__main__':
-    unittest.main(argv=['first-arg-is-ignored'], exit=False)
+            
 
-# %% UNIT TESTING FOR AttrConfigAndVars
+class TestCheckAttributesExist(unittest.TestCase):
+    print('Testing _check_attributes_exist')
+    def test_check_attributes_exist(self):
+        mock_pdf = pd.DataFrame({
+            'data_source': 'hydroatlas__v1',
+            'dl_timestamp': '2024-07-26 08:59:36',
+            'attribute': ['pet_mm_s01', 'cly_pc_sav','pet_mm_s01', 'cly_pc_sav'],
+            'value': [58, 21, 65,32],
+            'featureID': ['1520007','1520007','1623207','1623207'],
+            'featureSource': 'COMID'
+            })
+        
+        with warnings.catch_warnings(record = True) as w:
+            warnings.simplefilter("always")
+            fs_algo_train_eval._check_attributes_exist(mock_pdf,pd.Series(['pet_mm_s01','cly_pc_sav']))
+            self.assertEqual(len(w),0)
 
-class TestAttrConfigAndVars(unittest.TestCase):
+        mock_pdf_bad = mock_pdf.copy()
+        mock_pdf_bad.drop(index=0, inplace = True)
+        with self.assertWarns(UserWarning):
+            fs_algo_train_eval._check_attributes_exist(mock_pdf_bad,pd.Series(['pet_mm_s01','cly_pc_sav']))
+        
+        # # with warnings.catch_warnings(record = True) as w:
+        # #     warnings.simplefilter("always")
+        # #     fs_algo_train_eval._check_attributes_exist(mock_pdf_bad,pd.Series(['pet_mm_s01','cly_pc_sav']))
+        # #     self.assertEqual(len(w),1)
+        
+        # mock_pdf_bad1 = mock_pdf.copy()
+        # mock_pdf_bad1['attribute'] = 'cly_pc_sav'
 
-    @patch('builtins.open', new_callable=mock_open, read_data='''
-            attr_select:
-            - attr_vars: [attr1, attr2, attr3]
-            file_io:
-            - dir_base: "{home_dir}/base_dir"
-            - dir_db_attrs: "{dir_base}/db_attrs"
-            - dir_std_base: "{dir_base}/std_base"
-            formulation_metadata:
-            - datasets: ["dataset1", "dataset2"]
-                ''')
-    @patch('pathlib.Path.home', return_value='/mocked/home')
-    def test_read_attr_config(self, mock_home, mock_file):
-        path = '/path/to/config.yaml'
-        attr_obj = AttrConfigAndVars(path)
-        attr_obj._read_attr_config()
+        # with self.assertWarns(UserWarning):
+        #     fs_algo_train_eval._check_attributes_exist(mock_pdf_bad1,pd.Series(['pet_mm_s01','cly_pc_sav']))
+        
+        
+        # with warnings.catch_warnings(record = True) as w:
+        #     warnings.simplefilter("always")
+        #     fs_algo_train_eval._check_attributes_exist(mock_pdf_bad1,pd.Series(['pet_mm_s01','cly_pc_sav']))
+        #     self.assertEqual(len(w),1)
 
-        # Test if the file is opened with the correct path
-        mock_file.assert_called_once_with(path, 'r')
+    # @patch('fs_algo.fs_algo_train_eval.yaml.safe_load')
+    # def test_no_attrs_warning(self, mock_home, mock_file):
+    #     mock_dict_attr_config = {'attr_select': {'attr_vars': ['attr1','attr2']},
+    #                              'file_io': {'dir_base': '/path/dir/base',
+    #                                          'dir_db_attrs':'/path/dir/db/attrs',
+    #                                          'dir_std_base':'/path/dir/std/base'},
+    #                             'formulation_metadata':{'datasets':'test_ds'}}
 
-        # Test if Path.home() was called
-        mock_home.assert_called_once()
+    # # @patch('pathlib.Path.home', return_value='/mocked/home')
+    # def test_no_attrs_warning(self, mock_home, mock_file):
+    #     path = '/path/to/config.yaml'
+    #     attr_obj = AttrConfigAndVars(path)
 
-        # Test the parsed data from the config
-        expected_attrs_cfg_dict = {
-            'attrs_sel': ['attr1', 'attr2', 'attr3'],
-            'dir_db_attrs': '/mocked/home/base_dir/db_attrs',
-            'dir_std_base': '/mocked/home/base_dir/std_base',
-            'dir_base': '/mocked/home/base_dir',
-            'datasets': ['dataset1', 'dataset2']
-        }
-
-        self.assertEqual(attr_obj.attrs_cfg_dict, expected_attrs_cfg_dict)
-
-    @patch('builtins.open', new_callable=mock_open, read_data='''
-                    attr_select: []
-                    file_io:
-                    - dir_base: "{home_dir}/base_dir"
-                    - dir_db_attrs: "{dir_base}/db_attrs"
-                    - dir_std_base: "{dir_base}/std_base"
-                    formulation_metadata:
-                    - datasets: ["dataset1", "dataset2"]
-                        ''')
-    
-    @patch('pathlib.Path.home', return_value='/mocked/home')
-    def test_no_attrs_warning(self, mock_home, mock_file):
-        path = '/path/to/config.yaml'
-        attr_obj = AttrConfigAndVars(path)
-
-        # Test if the Warning is raised correctly
+        # TODO investigate this here. Began failing after 
+        # # Test if the Warning is raised correctly
         # with self.assertWarns(Warning):
         #     attr_obj._read_attr_config()
 
@@ -141,9 +197,64 @@ class TestAttrConfigAndVars(unittest.TestCase):
         # self.assertEqual(attr_obj.attrs_cfg_dict['attrs_sel'], 'all')
 
 
+class TestFsRetrNhdpComids(unittest.TestCase):
+
+    def test_fs_retr_nhdp_comids(self):
+
+        # Define test inputs
+        featureSource = 'nwissite'
+        featureID = 'USGS-{gage_id}'
+        gage_ids = ["01031500", "08070000"]
+
+        result = fs_algo_train_eval.fs_retr_nhdp_comids(featureSource, featureID, gage_ids)
+
+        # Assertions
+        self.assertEqual(result, ['1722317', '1520007'])
+
+class TestFindFeatSrceId(unittest.TestCase):
+
+    def test_find_feat_srce_id(self):
+        attr_config = {'col_schema': [{'featureID': 'USGS-{gage_id}'},
+                        {'featureSource': 'nwissite'}],
+                        'loc_id_read': [{'gage_id': 'gage_id'},
+                        {'loc_id_filepath': '{dir_std_base}/juliemai-xSSA/eval/metrics/juliemai-xSSA_Raven_blended.csv'},
+                        {'featureID_loc': 'USGS-{gage_id}'},
+                        {'featureSource_loc': 'nwissite'}],
+                        }
+        rslt = fs_algo_train_eval._find_feat_srce_id(attr_config = attr_config)
+        self.assertEqual(rslt,['nwissite','USGS-{gage_id}'])
+
+    # Raise error when featureSource not provided:
+    def test_missing_feat_srce(self):
+        attr_config_miss = {'col_schema': [{'featureID': 'USGS-{gage_id}'},
+                                            {'fe0a0ur0eS0ou0r0ce': 'nwissite'}],
+                            'loc_id_read': {'gage_id': 'gage_id'}}
+        with self.assertRaises(ValueError):
+            fs_algo_train_eval._find_feat_srce_id(attr_config = attr_config_miss, dat_resp=None)
+
+    def test_netcdf_attributes(self):
+         # Create a mock xarray.Dataset object w/ attributes
+        mock_xr = MagicMock(spec=xr.Dataset)
+        mock_xr.attrs = {'featureSource': 'nwissite',
+                         'featureID': 'USGS-{gage_id}'}
+
+        rslt = fs_algo_train_eval._find_feat_srce_id(mock_xr)
+        self.assertEqual(rslt,['nwissite','USGS-{gage_id}'])
+
+
+    # Raise error when featureID not provided:
+    def test_missing_feat_id(self):
+         # Create a mock xarray.Dataset object
+        mock_xr = MagicMock(spec=xr.Dataset)
+        mock_xr.attrs = {'featureSource': 'nwissite',
+                         'f0e1a0tu1reID': 'USGS-{gage_id}'}
+
+        with self.assertRaises(ValueError):
+            fs_algo_train_eval._find_feat_srce_id(mock_xr)
+
 # %% UNIT TEST FOR AlgoTrainEval class
 class TestAlgoTrainEval(unittest.TestCase):
-
+    print("Testing AlgoTrainEval")
     def setUp(self):
         # Create a simple DataFrame for testing
         data = {

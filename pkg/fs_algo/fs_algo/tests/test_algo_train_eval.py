@@ -264,7 +264,13 @@ class TestFsSaveAlgoDirStruct(unittest.TestCase):
         with self.assertRaises(ValueError):
             fs_algo_train_eval.fs_save_algo_dir_struct(dir_base + '/not_a_dir/')
 
+class TestOpenResponseDataFsds(unittest.TestCase):
+    dir_std_base = tempfile.gettempdir()
 
+    def test_open_response_data_fsds(self):
+
+        with self.assertRaisesRegex(ValueError, 'Could not identify an approach to read in dataset'):
+            fs_algo_train_eval._open_response_data_fsds(self.dir_std_base,ds='not_a_ds')
 
 
 # %% UNIT TEST FOR AlgoTrainEval class

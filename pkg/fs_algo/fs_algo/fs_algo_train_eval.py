@@ -168,7 +168,7 @@ def fs_save_algo_dir_struct(dir_base: str | os.PathLike ) -> dict:
     if not Path(dir_base).exists():
         raise ValueError(f"The provided dir_base does not exist. \
                          \n Double check the config file to make sure \
-                         an existing directory is provided. dir_base= \
+                         \n an existing directory is provided. dir_base= \
                          \n{dir_base}")
 
     # Define the standardized directory structure for algorithm output
@@ -185,7 +185,7 @@ def fs_save_algo_dir_struct(dir_base: str | os.PathLike ) -> dict:
 
     return out_dirs
 
-def _open_response_data_fsds(dir_std_base,ds):
+def _open_response_data_fsds(dir_std_base: str | os.PathLike, ds:str) -> xr.Dataset:
     # TODO implement a check to ensure each dataset directory exists
     path_nc = [x for x in Path(dir_std_base/Path(ds)).glob("*.nc") if x.is_file()]
 

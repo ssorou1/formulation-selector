@@ -11,5 +11,6 @@ algorithms: # REQUIRED. Refer to AlgoTrainEval.train_algos to see what options a
     - learning_rate: constant
     - power_t: 0.5
     - max_iter: 20000
+test_size: 0.3 # The proportion of dataset for testing, passed to sklearn.train_test_split
 name_attr_config: 'xssa_attr_config.yaml'  # REQUIRED. Name of the corresponding dataset's attribute configuration file, which should be in the same directory as this. If not provided, assumes 'attr' may be substituted for this filename's 'algo'
 verbose: True # Boolean. Should the train/test/eval provide printouts on progress?

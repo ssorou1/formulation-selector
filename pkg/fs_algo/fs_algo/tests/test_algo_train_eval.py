@@ -252,6 +252,21 @@ class TestFindFeatSrceId(unittest.TestCase):
         with self.assertRaises(ValueError):
             fs_algo_train_eval._find_feat_srce_id(mock_xr)
 
+
+class TestFsSaveAlgoDirStruct(unittest.TestCase):
+    def test_fs_save_algo_dir_struct(self):
+        dir_base = tempfile.gettempdir()
+        rslt = fs_algo_train_eval.fs_save_algo_dir_struct(dir_base)
+        self.assertIn('dir_out', rslt.keys())
+        self.assertIn('dir_out_alg_base', rslt.keys())
+        self.assertTrue(Path(rslt['dir_out_alg_base']).exists)
+
+        with self.assertRaises(ValueError):
+            fs_algo_train_eval.fs_save_algo_dir_struct(dir_base + '/not_a_dir/')
+
+
+
+
 # %% UNIT TEST FOR AlgoTrainEval class
 class TestAlgoTrainEval(unittest.TestCase):
     print("Testing AlgoTrainEval")

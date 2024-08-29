@@ -350,7 +350,7 @@ class AlgoTrainEval:
         """
         
         if self.verbose:
-            print(f"      Performing train/test split as {self.test_size}/{round(1-self.test_size,2)}")
+            print(f"      Performing train/test split as {round(1-self.test_size,2)}/{self.test_size}")
 
         X = self.df[self.attrs]
         y = self.df[self.metric]

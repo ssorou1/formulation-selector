@@ -6,7 +6,7 @@ col_schema:   # required column mappings in the evaluation metrics dataset
 file_io: # May define {home_dir} for python's '{home_dir}/string_path'.format(home_dir =str(Path.home())) functionality
   - 'path_data': '{home_dir}/Lauren/FSDS/results/SI_LSTM/LSTM_performance.csv' # Where the raw input data are stored.
   - 'dir_save': '{home_dir}/Lauren/FSDS/data/input' # Required. The save location of standardized output
-  - 'save_type': 'netcdf' #  Required. Save as hierarchical files 'netcdf' or 'zarr'. Default 'netcdf' until attribute 
+  - 'save_type': 'netcdf' #  Required. Save as hierarchical files 'netcdf' or 'zarr'. Default 'netcdf' until zarr functionality added in fsds.attr.hydfab R package.
   - 'save_loc': 'local' #  Required.  Use 'local' for saving to a local path via dir_save. Future work will create an approach for 'aws' or other cloud saving methods
 formulation_metadata:  
   - 'dataset_name': 'SI-LSTM' # Required. 

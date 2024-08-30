@@ -1,4 +1,4 @@
-# setup for the Julie Mai xSSA datasets from 2022 Nature Comm pub
+# setup for the 2022 Summer Institute datasets
 col_schema:   # required column mappings in the evaluation metrics dataset
   - 'gage_id': 'basin' # The basin identifier/gage id used for each modeled location in the evaluation metrics dataset
   - 'metric_cols': 'NSE|nnse' # Column(s) in the dataset corresponding to the evaluation metrics. If multiple exist, separate each string by '|' e.g. 'rmse|kge|nse'

@@ -638,13 +638,12 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
   return(ls_comids_all)
 }
 
-check_attr_selection <- function(attr_cfg_path, vars){
-
+check_attr_selection <- function(attr_cfg_path = NULL, vars = NULL){
   # Read in the menu of attributes available through FSDS
   attr_menu <- yaml::read_yaml('./fsds_attr_menu.yaml')
   
-  if(!missing(attr_cfg_path)){
-  
+  if(!is.null(attr_cfg_path)){
+
     # Read in the user defined config of attributes of interest
     # attr_cfg_path <- '../../scripts/eval_ingest/xssa/xssa_attr_config.yaml'
     attr_cfg <- yaml::read_yaml(attr_cfg_path)
@@ -669,10 +668,13 @@ check_attr_selection <- function(attr_cfg_path, vars){
     #   unname()
     
     vars_sel <- c(ha_vars_sel, usgs_vars_sel) # camels_vars_sel, sc_vars_sel
+    print(class(vars_sel))
     rm(ha_vars_sel, usgs_vars_sel) # camels_vars_sel, sc_vars_sel
-  }else{
+  }
+  if(is.null(attr_cfg_path) & !is.null(vars)){
     # vars <- c("TOT_twi","TOT_PRSNOW","TOT_POPDENS90","TOT_EWT","TOT_RECHG","TOT_BFI")
     vars_sel <- vars
+    print(class(vars_sel))
   }
   
   # Check if the entered variables exist in the attribute menu
@@ -693,16 +695,14 @@ check_attr_selection <- function(attr_cfg_path, vars){
   
   # Warn the user of any requested attrs that are missing
   missing_vars <- vars_sel[which(!vars_sel %in% vars_menu)] 
+  missing_vars_list <- paste0(missing_vars, collapse=', ')
 
   # Only print a warning if the user requested unavailable attrs:
   if (length(missing_vars) > 0){
-    missing_vars_list <- paste0(missing_vars, collapse=', ')
-
     # Tell the user they asked for something that's not available
     warn_msg <- glue::glue('The following attributes, as specified, were not found in the attribute menu:\n',
-                 missing_vars_list, sep = ',')
+                 missing_vars_list, '\nPlease check spelling, capitalization, etc. and revise the *_attr_config.yaml', sep = ',')
     warning(warn_msg)
-    
     }
 }
 

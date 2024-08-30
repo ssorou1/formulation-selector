@@ -178,10 +178,13 @@ def _find_feat_srce_id(dat_resp: Optional[xr.core.dataset.Dataset] = None,
     try: # dataset attributes first
         featureSource = dat_resp.attrs.get('featureSource', None)
     except (KeyError, StopIteration,AttributeError): # config file second
+        pass
+    if featureSource is None:
         try: 
             featureSource = next(x['featureSource'] for x in attr_config['col_schema'] if 'featureSource' in x)
         except:
             pass
+    
     if not featureSource:
         raise ValueError(f'The featureSource could not be found. Ensure it is present in the col_schema section of the attribute config file.')
     # Attempt to grab featureID from dataset attributes, fallback to the config file
@@ -189,6 +192,8 @@ def _find_feat_srce_id(dat_resp: Optional[xr.core.dataset.Dataset] = None,
     try: # dataset attributes first
         featureID = dat_resp.attrs.get('featureID', None)
     except (KeyError, StopIteration,AttributeError): # config file second
+        pass
+    if featureID is None:
         try:
             featureID = next(x['featureID'] for x in attr_config['col_schema'] if 'featureID' in x)
         except:

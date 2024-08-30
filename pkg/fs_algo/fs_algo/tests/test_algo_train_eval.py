@@ -252,6 +252,20 @@ class TestFindFeatSrceId(unittest.TestCase):
         with self.assertRaises(ValueError):
             fs_algo_train_eval._find_feat_srce_id(mock_xr)
 
+    # Test when dataset does not have any attributes but does have config:
+    def test_missing_attrs(self):
+        mock_xr = MagicMock(spec=xr.Dataset)
+        mock_xr.attrs = {'notit': 'blah',
+                         'alsonotit': 'bleh'}
+        attr_config = {'col_schema': [{'featureID': 'USGS-{gage_id}'},
+                {'featureSource': 'nwissite'}],
+                'loc_id_read': [{'gage_id': 'gage_id'},
+                {'loc_id_filepath': '{dir_std_base}/juliemai-xSSA/eval/metrics/juliemai-xSSA_Raven_blended.csv'},
+                {'featureID_loc': 'USGS-{gage_id}'},
+                {'featureSource_loc': 'nwissite'}],
+                }
+        rslt = fs_algo_train_eval._find_feat_srce_id(dat_resp = mock_xr, attr_config = attr_config)
+        self.assertEqual(rslt,['nwissite','USGS-{gage_id}'])
 
 class TestFsSaveAlgoDirStruct(unittest.TestCase):
     def test_fs_save_algo_dir_struct(self):

@@ -286,7 +286,7 @@ class TestAlgoTrainEval(unittest.TestCase):
         self.df = pd.DataFrame(data)
 
         # Variables and configurations for algorithms
-        self.vars = ['attr1', 'attr2']
+        self.attrs = ['attr1', 'attr2']
         self.algo_config = {
             'rf': {'n_estimators': 10},
             'mlp': {'hidden_layer_sizes': (10,), 'max_iter': 200}
@@ -298,7 +298,7 @@ class TestAlgoTrainEval(unittest.TestCase):
         self.dir_out_alg_ds = tempfile.gettempdir()
 
         # Instantiate AlgoTrainEval class
-        self.train_eval = AlgoTrainEval(df=self.df, vars=self.vars, algo_config=self.algo_config,
+        self.train_eval = AlgoTrainEval(df=self.df, attrs=self.attrs, algo_config=self.algo_config,
                                  dir_out_alg_ds=self.dir_out_alg_ds, dataset_id=self.dataset_id,
                                  metr=self.metric, test_size=0.4, rs=42)
 

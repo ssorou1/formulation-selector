@@ -93,8 +93,21 @@ testthat::test_that('proc_attr_gageids',{
 
 })
 
-
-
+testthat::test_that('check_attr_selection', {
+  ## Using a config yaml
+  # Test for only requesting vars that ARE in the attr menu
+  attr_cfg_path <- '../../scripts/eval_ingest/xssa/xssa_attr_config.yaml'
+  expect_equal(check_attr_selection(attr_cfg_path), NA)
+  
+  ## Using a list of variables of interest
+  # Test for requesting something not in the attr menu
+  vars <- c('TOT_TWi', 'TOT_PRSNOW', 'TOT_EWT')
+  expect_equal(check_attr_selection(vars = vars), 'TOT_TWi')
+  
+  # Test for only requesting vars that ARE in the attr menu
+  vars <- c('TOT_TWI', 'TOT_PRSNOW', 'TOT_EWT')
+  expect_equal(check_attr_selection(vars = vars), NA)
+})
 
 
 testthat::test_that('retrieve_attr_exst', {

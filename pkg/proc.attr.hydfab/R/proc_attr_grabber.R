@@ -668,13 +668,11 @@ check_attr_selection <- function(attr_cfg_path = NULL, vars = NULL){
     #   unname()
     
     vars_sel <- c(ha_vars_sel, usgs_vars_sel) # camels_vars_sel, sc_vars_sel
-    print(class(vars_sel))
     rm(ha_vars_sel, usgs_vars_sel) # camels_vars_sel, sc_vars_sel
   }
   if(is.null(attr_cfg_path) & !is.null(vars)){
     # vars <- c("TOT_twi","TOT_PRSNOW","TOT_POPDENS90","TOT_EWT","TOT_RECHG","TOT_BFI")
     vars_sel <- vars
-    print(class(vars_sel))
   }
   
   # Check if the entered variables exist in the attribute menu
@@ -703,7 +701,10 @@ check_attr_selection <- function(attr_cfg_path = NULL, vars = NULL){
     warn_msg <- glue::glue('The following attributes, as specified, were not found in the attribute menu:\n',
                  missing_vars_list, '\nPlease check spelling, capitalization, etc. and revise the *_attr_config.yaml', sep = ',')
     warning(warn_msg)
-    }
+  }else{
+    missing_vars <- NA
+  }
+  return(missing_vars)
 }
 
 

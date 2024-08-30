@@ -638,72 +638,73 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
   return(ls_comids_all)
 }
 
-check_attr_selection <- function(attr_cfg_path){
+check_attr_selection <- function(attr_cfg_path, vars){
+
   # Read in the menu of attributes available through FSDS
   attr_menu <- yaml::read_yaml('./fsds_attr_menu.yaml')
-
-  # Read in the user defined config of attributes of interest
-  # attr_cfg_path <- '../../scripts/eval_ingest/xssa/xssa_attr_config.yaml'
-  attr_cfg <- yaml::read_yaml(attr_cfg_path)
   
-  # Determine which data sets the user specifies attributes from
-  ha_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
-    base::unlist() %>% base::grep(pattern = "ha_vars")
-  ha_vars_sel <- base::sapply(ha_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
-    unlist() |> 
-    unname() #|>
-    # tolower()
+  if(!missing(attr_cfg_path)){
   
-  usgs_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
-    base::unlist() %>% base::grep(pattern = "usgs_vars")
-  usgs_vars_sel <- base::sapply(usgs_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
-    unlist() |> 
-    unname() #|>
-    # tolower()
-  
-  sc_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
-    base::unlist() %>% base::grep(pattern = "sc_vars")
-  sc_vars_sel <- base::sapply(sc_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
-    unlist() |> 
-    unname()# |>
-    # tolower()
-  
-  vars_sel <- c(ha_vars_sel, usgs_vars_sel, sc_vars_sel) # camels_vars_sel
-  rm(ha_vars_sel, usgs_vars_sel, sc_vars_sel, camels_vars_sel)
+    # Read in the user defined config of attributes of interest
+    # attr_cfg_path <- '../../scripts/eval_ingest/xssa/xssa_attr_config.yaml'
+    attr_cfg <- yaml::read_yaml(attr_cfg_path)
+    
+    # Determine which data sets the user specifies attributes from
+    ha_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
+      base::unlist() %>% base::grep(pattern = "ha_vars")
+    ha_vars_sel <- base::sapply(ha_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
+      unlist() |> 
+      unname() 
+    
+    usgs_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
+      base::unlist() %>% base::grep(pattern = "usgs_vars")
+    usgs_vars_sel <- base::sapply(usgs_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
+      unlist() |> 
+      unname() 
+    
+    # sc_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
+    #   base::unlist() %>% base::grep(pattern = "sc_vars")
+    # sc_vars_sel <- base::sapply(sc_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
+    #   unlist() |> 
+    #   unname()
+    
+    vars_sel <- c(ha_vars_sel, usgs_vars_sel) # camels_vars_sel, sc_vars_sel
+    rm(ha_vars_sel, usgs_vars_sel) # camels_vars_sel, sc_vars_sel
+  }else{
+    # vars <- c("TOT_twi","TOT_PRSNOW","TOT_POPDENS90","TOT_EWT","TOT_RECHG","TOT_BFI")
+    vars_sel <- vars
+  }
   
   # Check if the entered variables exist in the attribute menu
   ha_menu <- base::unlist(attr_menu$hydroatlas_attributes) |> 
-    base::names() #|> 
-    # base::tolower()
+    base::names() 
+  
   usgs_menu <- base::unlist(attr_menu$usgs_attributes) |> 
-    base::names() #|> 
-    # base::tolower()
-  # sc_menu <- base::unlist(attr_menu$sc_attributes) |> base::names() |> base::tolower()
+    base::names() 
+  
+  # sc_menu <- base::unlist(attr_menu$sc_attributes) |>
+  #   base::names()
+  
   camels_menu <- base::unlist(attr_menu$camels_attributes) |> 
-    base::names() #|> 
-    # base::tolower()
+    base::names() 
+  
   vars_menu <- c(ha_menu, camels_menu, usgs_menu) # sc_menu
-  rm(ha_menu, usgs_menu, sc_menu, camels_menu)
+  rm(ha_menu, usgs_menu, camels_menu) # sc_menu
   
   # Warn the user of any requested attrs that are missing
-  missing_vars <- vars_sel[which(!vars_sel %in% vars_menu)]
-  vars_menu_lower <- base::tolower(vars_menu)
-  missing_vars_lower <- which(vars_menu_lower %in% missing_vars)
+  missing_vars <- vars_sel[which(!vars_sel %in% vars_menu)] 
 
+  # Only print a warning if the user requested unavailable attrs:
   if (length(missing_vars) > 0){
-    missing_vars <- paste0(missing_vars, collapse=', ')
-    missing_vars_correct <- paste0(missing_vars_correct, collapse = ', ')
+    missing_vars_list <- paste0(missing_vars, collapse=', ')
 
-    warn_msg <- if(length(vars_menu[missing_vars_lower]) == 0){
-      missing_vars_correct <- vars_menu[missing_vars_lower]
-      glue::glue('The following attributes, as specified, were not found in the attribute menu:\n', 
-                 missing_vars, sep = ',')
-    }else{
-      glue::glue('The following attributes, as specified, were not found in the attribute menu:\n', 
-                 missing_vars, '\nDid you mean:\n', missing_vars_correct,
-                 "?\nIf so, please correct in the *attr_config.yaml file",
-                 sep = ',')
-    }
+    # Tell the user they asked for something that's not available
+    warn_msg <- glue::glue('The following attributes, as specified, were not found in the attribute menu:\n',
+                 missing_vars_list, sep = ',')
     warning(warn_msg)
+    
     }
 }
+
+
+

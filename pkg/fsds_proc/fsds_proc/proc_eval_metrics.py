@@ -482,7 +482,7 @@ def check_fix_nwissite_gageids(df:pd.DataFrame, gage_id_col:str,
                                     'good_id' : ls_prezero})
             cmbo_df = df.merge(conv_df, left_on = gage_id_col, right_on ='wrong_id', how='left') 
             cmbo_df['fix'] = cmbo_df['good_id']
-
+            cmbo_df.fillna({'fix':cmbo_df[gage_id_col]},inplace=True)
             # In case some values are still bad, set the 'fix' column's bad vals to NA
             cmbo_df.loc[cmbo_df[gage_id_col].isin(ls_still_bad),'fix'] = pd.NA
 

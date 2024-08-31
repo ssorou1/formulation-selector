@@ -33,7 +33,7 @@ if __name__ == "__main__":
     test_size = algo_cfg['test_size']
     seed = algo_cfg['seed']
 
-    if not path_algo_config.exists():
+    if not Path(path_attr_config).exists():
         raise ValueError(f"Ensure that 'name_attr_config' as defined inside {path_algo_config.name} \
                           \n is also in the same directory as the algo config file {path_algo_config.parent}" )
     print("BEGINNING algorithm training, testing, & evaluation.")

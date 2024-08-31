@@ -30,10 +30,13 @@ library(glue)
 
 # Define input directory:
 # TODO change this to reading the standardized metadata, not the generated data
-raw_config <- yaml::read_yaml("/Users/guylitt/git/fsds/scripts/eval_ingest/xssa/xssa_attr_config.yaml")
 
-datasets <- ds <- c("juliemai-xSSA",'all')[1] # A listing of datasets to grab attributes. Dataset names match what is inside dir_std_base.  'all' processes all datasets inside dir_std_base.
-ds_nc_filenames <- c('juliemai-xSSA_Raven_blended.nc','*.nc')[1]
+# raw_config <- yaml::read_yaml("/Users/guylitt/git/formulation-selector/scripts/eval_ingest/xssa/xssa_attr_config.yaml")
+raw_config <- yaml::read_yaml("/Users/guylitt/git/formulation-selector/scripts/eval_ingest/SI/SI_attr_config.yaml")
+
+
+datasets <- ds <- raw_config$formulation_metadata[[grep("datasets",raw_config$formulation_metadata)]]$datasets#c("juliemai-xSSA",'all')[1] # A listing of datasets to grab attributes. Dataset names match what is inside dir_std_base.  'all' processes all datasets inside dir_std_base.
+#ds_nc_filenames <- c('juliemai-xSSA_Raven_blended.nc','*.nc')[1]
 
 
 home_dir <- Sys.getenv("HOME")
@@ -54,9 +57,9 @@ hf_cat_sel <- c("total","all")[1] # total: interested in the single location's a
 ext <- 'gpkg'
 attr_sources <- c("hydroatlas","usgs") # "streamcat",
 # TODO communicate to user that these are standardized variable names
-ha_vars <- c('pet_mm_s01', 'cly_pc_sav', 'cly_pc_uav') # hydroatlas variables
+ha_vars <- c('pet_mm_s01', 'cly_pc_sav', 'cly_pc_uav','cly_pc_sav','ari_ix_sav') # hydroatlas variables
 sc_vars <- c() # TODO look up variables. May need to select datasets first
-usgs_vars <- c('TOT_TWI','TOT_PRSNOW','TOT_POPDENS90','TOT_EWT','TOT_RECHG') # list of variables retrievable using nhdplusTools::get_characteristics_metadata()
+usgs_vars <- c('TOT_TWI','TOT_PRSNOW','TOT_POPDENS90','TOT_EWT','TOT_RECHG','TOT_PPT7100_ANN','TOT_AET','TOT_PET','TOT_SILTAVE','TOT_BASIN_AREA','TOT_BASIN_SLOPE','TOT_ELEV_MEAN','TOT_ELEV_MAX','TOT_Intensity','TOT_Wet','TOT_Dry' ) # list of variables retrievable using nhdplusTools::get_characteristics_metadata()
 #-----------------------------------------------------
 
 # TODO generate this listing structure based on what is provided in yaml config

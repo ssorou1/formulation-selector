@@ -184,7 +184,7 @@ proc_attr_usgs_nhd <- function(comid,usgs_vars){
 }
 
 
-proc_attr_hf <- function(comid, dir_hydfab,custom_name="{lyrs}_",ext = 'gpkg',
+proc_attr_hf <- function(comid, dir_db_hydfab,custom_name="{lyrs}_",ext = 'gpkg',
                          lyrs=c('divides','network')[2],
                          hf_cat_sel=TRUE, overwrite=FALSE){
 
@@ -192,7 +192,7 @@ proc_attr_hf <- function(comid, dir_hydfab,custom_name="{lyrs}_",ext = 'gpkg',
   #' @author Guy Litt \email{guy.litt@noaa.gov}
   #' @description Checks to see if a local dataset exists. If not, retrieve from lynker-spatial s3 bucket
   #' @param comid character class. The common identifier USGS location code for a surface water feature.
-  #' @param dir_hydfab character class. Local directory path for storing hydrofabric data
+  #' @param dir_db_hydfab character class. Local directory path for storing hydrofabric data
   #' @param custom_name character class. A custom name to insert into hydrofabric file. Default \code{glue("{lyrs}_")}
   #' @param ext character class. file extension of hydrofabric file. Default 'gpkg'
   #' @param lyrs character class. The layer name(s) of interest from hydrofabric. Default 'network'.
@@ -204,11 +204,11 @@ proc_attr_hf <- function(comid, dir_hydfab,custom_name="{lyrs}_",ext = 'gpkg',
   name_file <- proc.attr.hydfab:::proc_attr_std_hfsub_name(comid=comid,
                                    custom_name=glue::glue('{lyrs}_'),
                                    ext=ext)
-  fp_cat <- base::file.path(dir_hydfab, name_file)
+  fp_cat <- base::file.path(dir_db_hydfab, name_file)
 
-  if(!base::dir.exists(dir_hydfab)){
-    warning(glue::glue("creating the following directory: {dir_hydfab}"))
-    base::dir.create(dir_hydfab)
+  if(!base::dir.exists(dir_db_hydfab)){
+    warning(glue::glue("creating the following directory: {dir_db_hydfab}"))
+    base::dir.create(dir_db_hydfab)
   }
 
   # Generate the nldi feature listing
@@ -321,7 +321,7 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
 
   # Retrieve the hydrofabric id
   net <- proc.attr.hydfab::proc_attr_hf(comid=comid,
-                                        dir_hydfab=Retr_Params$paths$dir_hydfab,
+                                        dir_db_hydfab=Retr_Params$paths$dir_db_hydfab,
                                         custom_name ="{lyrs}_",
                                         lyrs=lyrs,overwrite=overwrite)
 
@@ -418,7 +418,7 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
   #' needed to acquire variables of interest. List objects include the following:
   #'  \itemize{
   #'  \item \code{paths} list of directories or paths used to acquire and save data These include the following:
-  #'  \item \code{paths$dir_hydfab} the local path to where hydrofabric data are saved
+  #'  \item \code{paths$dir_db_hydfab} the local path to where hydrofabric data are saved
   #'  \item \code{path$dir_db_attrs} local path for saving catchment attributes as parquet files
   #'  \item \code{path$s3_path_hydatl} the s3 location where hydroatlas data exist
   #'  \item \code{path$dir_std_base} the location of user_data_std containing dataset that were standardized by \pkg{fsds_proc}.
@@ -575,7 +575,7 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
   #' @param Retr_Params list of parameters built for grabbing catchment attribute data. List objects include the following:
   #'  \itemize{
   #'  \item \code{paths} list of directories or paths used to acquire and save data These include the following:
-  #'  \item \code{paths$dir_hydfab} the local path to where hydrofabric data are saved
+  #'  \item \code{paths$dir_db_hydfab} the local path to where hydrofabric data are saved
   #'  \item \code{path$dir_db_attrs} local path for saving catchment attributes as parquet files
   #'  \item \code{path$s3_path_hydatl} the s3 location where hydroatlas data exist
   #'  \item \code{path$dir_std_base} the location of user_data_std containing dataset that were standardized by \pkg{fsds_proc}.
@@ -617,6 +617,7 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
 
     # Retrieve the gage_ids, featureSource, & featureID from fsds_proc standardized output
     ls_fsds_std <- proc.attr.hydfab::proc_attr_read_gage_ids_fsds(dir_dataset)
+    # TODO add option to read in gage ids from a separate data source
     gage_ids <- ls_fsds_std$gage_ids
     featureSource <- ls_fsds_std$featureSource
     featureID <- ls_fsds_std$featureID

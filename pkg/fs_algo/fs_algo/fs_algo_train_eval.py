@@ -307,7 +307,19 @@ def _open_response_data_fsds(dir_std_base: str | os.PathLike, ds:str) -> xr.Data
 
 # %% ALGORITHM TRAINING AND EVALUATION
 
-def std_algo_path(dir_out_alg_ds, algo, metric, dataset_id):
+def std_algo_path(dir_out_alg_ds:str | os.PathLike, algo: str, metric: str, dataset_id: str) -> str:
+    """Standardize the algorithm save path
+    :param dir_out_alg_ds:  Directory where algorithm's output stored.
+    :type dir_out_alg_ds: str | os.PathLike
+    :param algo: The type of algorithm
+    :type algo: str
+    :param metric:  The metric or hydrologic signature identifier of interest
+    :type metric: str
+    :param dataset_id: Unique identifier/descriptor of the dataset of interest
+    :type dataset_id: str
+    :return: full save path for joblib object
+    :rtype: str
+    """
     basename_alg_ds_metr = f'algo_{algo}_{metric}__{dataset_id}'
     path_algo = Path(dir_out_alg_ds) / Path(basename_alg_ds_metr + '.joblib')
     return path_algo
@@ -329,7 +341,7 @@ class AlgoTrainEval:
             Each algorithm key contains sub-dict keys for the parameters that may be passed to the corresponding :mod:`sklearn` algorithm. 
             If no parameters keys are passed, the :mod:`sklearn` algorithm's default arguments are used.
         :type algo_config: dict
-        :param dir_out_alg_ds: Directory where algorithm's output will be stored.
+        :param dir_out_alg_ds: Directory where algorithm's output stored.
         :type dir_out_alg_ds: str | os.PathLike
         :param dataset_id: Unique identifier/descriptor of the dataset of interest, and will be used in file writing.
         :type dataset_id: str

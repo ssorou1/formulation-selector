@@ -2,7 +2,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.preprocessing import Normalizer
+from sklearn.preprocessing import StandardScaler, FunctionTransformer
+from sklearn.pipeline import make_pipeline
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -365,6 +366,8 @@ class AlgoTrainEval:
 
         # The evaluation summary result
         self.eval_df = pd.DataFrame()
+
+    
     def split_data(self):
         """Split dataframe into training and testing predictors (X) and response (y) variables using :func:`sklearn.model_selection.train_test_split`
 
@@ -373,8 +376,18 @@ class AlgoTrainEval:
         if self.verbose:
             print(f"      Performing train/test split as {round(1-self.test_size,2)}/{self.test_size}")
 
-        X = self.df[self.attrs]
-        y = self.df[self.metric]
+        # Check for NA values first
+        self.df_non_na = self.df[self.attrs + [self.metric]].dropna()
+        if self.df_non_na.shape[0] < self.df.shape[0]:
+            warnings.warn(f"\n\n \
+                \n   !!!!!!!!!!!!!!!!!!!\
+                \n   NA VALUES FOUND IN INPUT DATASET!! \
+                \n   DROPPING {self.df.shape[0] - self.df_non_na.shape[0]} ROWS OF DATA. \
+                \n   !!!!!!!!!!!!!!!!!!! \n\n")
+            
+
+        X = self.df_non_na[self.attrs]
+        y = self.df_non_na[self.metric]
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X,y, test_size=self.test_size, random_state=self.rs)
 
     def normalize_data(self):
@@ -383,6 +396,7 @@ class AlgoTrainEval:
             self.scaler = Normalizer()
             self.X_train_sc = self.scaler.fit_transform(self.X_train)
             self.X_test_sc = self.scalertransform(self.X_test)
+
 
             
     def train_algos(self):
@@ -397,12 +411,16 @@ class AlgoTrainEval:
                 print(f"      Performing Random Forest Training")
             rf = RandomForestRegressor(n_estimators=self.algo_config['rf'].get('n_estimators'),
                                        random_state=self.rs)
-            rf.fit(self.X_train, self.y_train)
+            pipe_rf = make_pipeline(rf)                           
+            pipe_rf.fit(self.X_train, self.y_train)
             self.algs_dict['rf'] = {'algo': rf,
+                                    'pipeline': pipe_rf,
                                     'type': 'random forest regressor',
                                     'metric': self.metric}
 
         if 'mlp' in self.algo_config:  # MULTI-LAYER PERCEPTRON
+            
+            
             if self.verbose:
                 print(f"      Performing Multilayer Perceptron Training")
             mlpcfg = self.algo_config['mlp']
@@ -415,8 +433,10 @@ class AlgoTrainEval:
                                learning_rate=mlpcfg.get('learning_rate', 'constant'),
                                power_t=mlpcfg.get('power_t', 0.5),
                                max_iter=mlpcfg.get('max_iter', 200))
-            mlp.fit(self.X_train, self.y_train) # TODO change to X_train_sc
+            pipe_mlp = make_pipeline(StandardScaler(),mlp)
+            pipe_mlp.fit(self.X_train, self.y_train)
             self.algs_dict['mlp'] = {'algo': mlp,
+                                     'pipeline': pipe_mlp,
                                      'type': 'multi-layer perceptron regressor',
                                      'metric': self.metric}
 
@@ -432,18 +452,12 @@ class AlgoTrainEval:
           
         for k, v in self.algs_dict.items():
             algo = v['algo']
+            pipe = v['pipeline']
             type_algo = v['type']
             if self.verbose:
                 print(f"      Generating predictions for {type_algo} algorithm.")   
             
-            # if type_algo == 'random forest':
-            # normalized data not needed
-            y_pred = algo.predict(self.X_test)
-            # elif 'multi-layer perceptron | neural network' in type_algo:
-            #     # Using normalized data
-            #     y_pred = algo.predict(self.X_test) # TODO change to X_test_sc
-            # else: 
-            #     raise ValueError("Need to add another aglorithm type here. See train_algos().")
+            y_pred = pipe.predict(self.X_test)
             self.preds_dict[k] = {'y_pred': y_pred,
                              'type': v['type'],
                              'metric': v['metric']}
@@ -478,12 +492,12 @@ class AlgoTrainEval:
         
         for algo in self.algs_dict.keys():
             if self.verbose:
-                print(f"      Saving {algo} for {self.metric} to file")
+                print(f"      Saving {algo} pipeline for {self.metric} to file")
             basename_alg_ds_metr = f'algo_{algo}_{self.metric}__{self.dataset_id}'
             path_algo = Path(self.dir_out_alg_ds) / Path(basename_alg_ds_metr + '.joblib')
             # write trained algorithm
-            joblib.dump(self.algs_dict[algo]['algo'], path_algo)
-            self.algs_dict[algo]['loc_algo'] = str(path_algo)
+            joblib.dump(self.algs_dict[algo]['pipeline'], path_algo)
+            self.algs_dict[algo]['loc_pipe'] = str(path_algo)
    
     def org_metadata_alg(self):
         """Must be called after running AlgoTrainEval.save_algos(). Records saved location of trained algorithm
@@ -495,7 +509,7 @@ class AlgoTrainEval:
         self.eval_df['dataset'] = self.dataset_id
 
         # Assign the locations where algorithms were saved
-        self.eval_df['loc_algo'] = [self.algs_dict[alg]['loc_algo'] for alg in self.algs_dict.keys()] 
+        self.eval_df['loc_pipe'] = [self.algs_dict[alg]['loc_pipe'] for alg in self.algs_dict.keys()] 
         self.eval_df['algo'] = self.eval_df.index
         self.eval_df = self.eval_df.reset_index()
     

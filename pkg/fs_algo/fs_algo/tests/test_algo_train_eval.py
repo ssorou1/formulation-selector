@@ -373,7 +373,7 @@ class TestAlgoTrainEval(unittest.TestCase):
         self.assertTrue(mock_dump.called)
 
         for algo in self.train_eval.algs_dict.keys():
-            self.assertIn('loc_algo', self.train_eval.algs_dict[algo])
+            self.assertIn('loc_pipe', self.train_eval.algs_dict[algo])
 
     def test_org_metadata_alg(self):
         # Test organizing metadata
@@ -391,7 +391,7 @@ class TestAlgoTrainEval(unittest.TestCase):
         # Check eval_df is correctly populated
         self.assertFalse(self.train_eval.eval_df.empty)
         self.assertIn('dataset', self.train_eval.eval_df.columns)
-        self.assertIn('loc_algo', self.train_eval.eval_df.columns)
+        self.assertIn('loc_pipe', self.train_eval.eval_df.columns)
         self.assertIn('algo', self.train_eval.eval_df.columns)
         self.assertEqual(self.train_eval.eval_df['dataset'].iloc[0], self.dataset_id)
 

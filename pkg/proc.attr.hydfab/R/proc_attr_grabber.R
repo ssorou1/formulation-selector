@@ -320,10 +320,15 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE){
   message(base::paste0("Processing COMID ",comid))
 
   # Retrieve the hydrofabric id
-  net <- proc.attr.hydfab::proc_attr_hf(comid=comid,
+  net <- try(proc.attr.hydfab::proc_attr_hf(comid=comid,
                                         dir_db_hydfab=Retr_Params$paths$dir_db_hydfab,
                                         custom_name ="{lyrs}_",
-                                        lyrs=lyrs,overwrite=overwrite)
+                                        lyrs=lyrs,overwrite=overwrite))
+  if ('try-error' %in% base::class(net)){
+    warning(glue::glue("Could not acquire hydrofabric for comid {comid}. Proceeding to acquire variables of interest without hydrofabric."))
+    net <- list()
+    net$hf_id <- comid
+  }
 
   path_attrs <- base::file.path(Retr_Params$paths$dir_db_attrs,
                           base::paste0("comid_",comid,"_attrs.parquet"))
@@ -461,9 +466,12 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
       comid <- site_feature['comid']$comid
       ls_comid[[gage_id]] <- comid
       # Retrieve the variables corresponding to datasets of interest & update database
-      loc_attrs <- proc.attr.hydfab::proc_attr_wrap(comid=comid,
+      loc_attrs <- try(proc.attr.hydfab::proc_attr_wrap(comid=comid,
                                                     Retr_Params=Retr_Params,
-                                                    lyrs='network',overwrite=FALSE)
+                                                    lyrs='network',overwrite=FALSE))
+      if("try-error" %in% class(loc_attrs)){
+        message(glue::glue("Skipping gage_id {gage_id} corresponding to comid {comid}"))
+      }
     } else {
       message(glue::glue("Skipping {gage_id}"))
     }
@@ -613,6 +621,7 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
 
   ls_comids_all <- base::list()
   for(dataset_name in datasets){ # Looping by dataset
+    message(glue::glue("--- PROCESSING {dataset_name} DATASET ---"))
     dir_dataset <- base::file.path(Retr_Params$paths$dir_std_base,dataset_name)
 
     # Retrieve the gage_ids, featureSource, & featureID from fsds_proc standardized output

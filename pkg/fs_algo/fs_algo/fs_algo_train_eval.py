@@ -306,6 +306,12 @@ def _open_response_data_fsds(dir_std_base: str | os.PathLike, ds:str) -> xr.Data
     return dat_resp
 
 # %% ALGORITHM TRAINING AND EVALUATION
+
+def std_algo_path(dir_out_alg_ds, algo, metric, dataset_id):
+    basename_alg_ds_metr = f'algo_{algo}_{metric}__{dataset_id}'
+    path_algo = Path(dir_out_alg_ds) / Path(basename_alg_ds_metr + '.joblib')
+    return path_algo
+
 class AlgoTrainEval:
     def __init__(self, df: pd.DataFrame, attrs: Iterable[str], algo_config: dict,
                  dir_out_alg_ds: str | os.PathLike, dataset_id: str,
@@ -486,15 +492,17 @@ class AlgoTrainEval:
         return self.eval_dict
 
     def save_algos(self):
-        """ Write algorithm to file & record save path in `algs_dict['loc_algo']`
+        """ Write pipeline to file & record save path in `algs_dict['loc_pipe']`
 
         """
         
         for algo in self.algs_dict.keys():
             if self.verbose:
                 print(f"      Saving {algo} pipeline for {self.metric} to file")
-            basename_alg_ds_metr = f'algo_{algo}_{self.metric}__{self.dataset_id}'
-            path_algo = Path(self.dir_out_alg_ds) / Path(basename_alg_ds_metr + '.joblib')
+
+            path_algo = std_algo_path(self.dir_out_alg_ds, algo, self.metric, self.dataset_id)
+            # basename_alg_ds_metr = f'algo_{algo}_{self.metric}__{self.dataset_id}'
+            # path_algo = Path(self.dir_out_alg_ds) / Path(basename_alg_ds_metr + '.joblib')
             # write trained algorithm
             joblib.dump(self.algs_dict[algo]['pipeline'], path_algo)
             self.algs_dict[algo]['loc_pipe'] = str(path_algo)

@@ -67,7 +67,7 @@ class AttrConfigAndVars:
 
 
 def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list | Iterable, attrs_sel: str | Iterable = 'all',
-                       _s3 = None,storage_options=None)-> dask_expr._collection.DataFrame:
+                       _s3 = None,storage_options=None)-> pd.DataFrame:
     """Read attribute data acquired using fsds.attr.hydfab R package & subset to desired attributes
 
     :param dir_db_attrs: directory where attribute .parquet files live
@@ -86,7 +86,7 @@ def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list | Iterab
         - `dir_std_base`
         - `dir_base`
         - `datasets`
-    :rtype: dask_expr._collection.DataFrame
+    :rtype: pd.DataFrame
     """
     if _s3:
         storage_options={"anon",True} # for public
@@ -109,15 +109,17 @@ def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list | Iterab
 
     attr_ddf_sub = attr_ddf_subloc[attr_ddf_subloc['attribute'].str.contains('|'.join(attrs_sel))]
     
-    if attr_ddf_sub.shape[0].compute() == 0:
+    attr_df_sub = attr_ddf_sub.compute()
+
+    if attr_df_sub.shape[0] == 0:
         warnings.warn(f'The provided attributes do not exist with the retrieved featureIDs : \
-                      \n {','.join(attrs_sel)}',UserWarning)
-    
+                        \n {','.join(attrs_sel)}',UserWarning)
+ 
     # Run check that all variables are present across all basins
-    dict_rslt = _check_attributes_exist(attr_ddf_sub.compute(),attrs_sel)
+    dict_rslt = _check_attributes_exist(attr_df_sub,attrs_sel)
     attr_df_sub, attrs_sel_ser = dict_rslt['df_attr'], dict_rslt['attrs_sel']
 
-    return attr_ddf_sub
+    return attr_df_sub
 
 def _check_attributes_exist(df_attr: pd.DataFrame, attrs_sel:pd.Series | Iterable) -> Dict[pd.DataFrame, pd.Series]:
     """ Checks if any COMIDs have different numbers of attributes. It's expected that they all have the same attributes.

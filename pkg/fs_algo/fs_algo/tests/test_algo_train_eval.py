@@ -110,18 +110,18 @@ class TestFsReadAttrComid(unittest.TestCase):
 
         # Assertions
         self.assertTrue(mock_read_parquet.called)
-        self.assertEqual(result.compute().shape[0], 2)
-        self.assertIn('1520007', result.compute()['featureID'].values)
-        self.assertIn('pet_mm_s01', result.compute()['attribute'].values)
-        self.assertIn('COMID',result.compute()['featureSource'].values )
-        self.assertIn('value',result.compute().columns )
-        self.assertIn('data_source',result.compute().columns )
+        self.assertEqual(result.shape[0], 2)
+        self.assertIn('1520007', result['featureID'].values)
+        self.assertIn('pet_mm_s01', result['attribute'].values)
+        self.assertIn('COMID',result['featureSource'].values )
+        self.assertIn('value',result.columns )
+        self.assertIn('data_source',result.columns )
 
         # When only one attribute requested
         single_result = fs_algo_train_eval.fs_read_attr_comid(dir_db_attrs=dir_db_attrs,
                                                               comids_resp= comids_resp,attrs_sel= ['pet_mm_s01'])
-        self.assertIn('pet_mm_s01',single_result.compute()['attribute'].values)
-        self.assertNotIn('cly_pc_sav',single_result.compute()['attribute'].values)
+        self.assertIn('pet_mm_s01',single_result['attribute'].values)
+        self.assertNotIn('cly_pc_sav',single_result['attribute'].values)
 
         # When COMID requested that doesn't exist
         with self.assertWarns(UserWarning):

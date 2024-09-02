@@ -2,6 +2,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import Normalizer
+import numpy as np
 import pandas as pd
 import xarray as xr
 import pynhd as nhd
@@ -118,6 +120,13 @@ def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list | Iterab
     # Run check that all variables are present across all basins
     dict_rslt = _check_attributes_exist(attr_df_sub,attrs_sel)
     attr_df_sub, attrs_sel_ser = dict_rslt['df_attr'], dict_rslt['attrs_sel']
+
+    if not pd.api.types.is_float_dtype(attr_df_sub['value']):
+        warnings.warn("Forcing all attribute values to be float")
+        attr_df_sub['value'] = np.float64(attr_df_sub['value'])
+
+    if attr_df_sub['value'].isna().any():
+        warnings.warn('The attribute dataset contains unexpected NA values, which may be problematic for some algo training/testing. Consider reprocessing the attribute grabber (fsds.attr.hydfab R package)')
 
     return attr_df_sub
 
@@ -337,12 +346,18 @@ class AlgoTrainEval:
         self.dataset_id = dataset_id
         self.verbose = verbose
 
+
         # train/test split
         self.X_train = pd.DataFrame()
         self.X_test = pd.DataFrame()
         self.y_train = pd.Series()
         self.y_test = pd.Series()
         
+        # scaling
+        self.scaler = None
+        self.X_train_sc = pd.DataFrame()
+        self.X_test_sc = pd.DataFrame()
+
         # train/pred/eval metadata
         self.algs_dict = {}
         self.preds_dict = {}
@@ -361,8 +376,15 @@ class AlgoTrainEval:
         X = self.df[self.attrs]
         y = self.df[self.metric]
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X,y, test_size=self.test_size, random_state=self.rs)
-        
 
+    def normalize_data(self):
+        #df_all = pd.concat([self.X_train, self.X_test]
+        if not self.scaler():
+            self.scaler = Normalizer()
+            self.X_train_sc = self.scaler.fit_transform(self.X_train)
+            self.X_test_sc = self.scalertransform(self.X_test)
+
+            
     def train_algos(self):
         """Train algorithms based on what has been defined in the algo config file Algorithm options include the following:
         
@@ -393,7 +415,7 @@ class AlgoTrainEval:
                                learning_rate=mlpcfg.get('learning_rate', 'constant'),
                                power_t=mlpcfg.get('power_t', 0.5),
                                max_iter=mlpcfg.get('max_iter', 200))
-            mlp.fit(self.X_train, self.y_train)
+            mlp.fit(self.X_train, self.y_train) # TODO change to X_train_sc
             self.algs_dict['mlp'] = {'algo': mlp,
                                      'type': 'multi-layer perceptron regressor',
                                      'metric': self.metric}
@@ -410,9 +432,18 @@ class AlgoTrainEval:
           
         for k, v in self.algs_dict.items():
             algo = v['algo']
+            type_algo = v['type']
             if self.verbose:
-                print(f"      Generating predictions for {algo} algorithm.")   
+                print(f"      Generating predictions for {type_algo} algorithm.")   
+            
+            # if type_algo == 'random forest':
+            # normalized data not needed
             y_pred = algo.predict(self.X_test)
+            # elif 'multi-layer perceptron | neural network' in type_algo:
+            #     # Using normalized data
+            #     y_pred = algo.predict(self.X_test) # TODO change to X_test_sc
+            # else: 
+            #     raise ValueError("Need to add another aglorithm type here. See train_algos().")
             self.preds_dict[k] = {'y_pred': y_pred,
                              'type': v['type'],
                              'metric': v['metric']}

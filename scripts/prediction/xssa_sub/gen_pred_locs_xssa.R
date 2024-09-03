@@ -17,6 +17,8 @@ home_dir <- Sys.getenv("HOME")
 path_attr_config <- glue::glue("{home_dir}/git/formulation-selector/scripts/eval_ingest/xssa/xssa_attr_config.yaml")
 path_raw_config <- glue::glue("{home_dir}/git/formulation-selector/scripts/eval_ingest/xssa/xssa_config.yaml")
 
+# TODO specify a standardized file prediction name in a prediction config file
+
 # ------------------------ ATTRIBUTE CONFIGURATION --------------------------- #
 cfig_attr <- yaml::read_yaml(path_attr_config)
 
@@ -102,3 +104,9 @@ ls_comids <- proc.attr.hydfab::proc_attr_gageids(gage_ids=subsamp_locs,
                                                  Retr_Params,
                                                  lyrs=lyrs,
                                                  overwrite=overwrite)
+df_pred <- base::data.frame('nwis_id' = names(ls_comids),
+                 'comid' = unlist(ls_comids))
+
+# TODO specify a standardized file prediction name in a config file
+save_path_pred <- file.path(dir_std_base,"prediction_locations_comid.csv")
+write.csv(df_pred,file = save_path_pred,row.names = FALSE)

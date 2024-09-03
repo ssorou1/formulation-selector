@@ -1,0 +1,5 @@
+# Prediction configuration file
+name_attr_config: 'xssa_attr_config.yaml'  # REQUIRED. Name of the corresponding dataset's attribute configuration file, which should be in the same directory as this. If not provided, assumes 'attr' may be substituted for this filename's 'algo'
+name_algo_config: 'xssa_algo_config.yaml'
+pred_file_in: '{dir_std_base}/prediction_locations_comid.csv'
+pred_file_comid_colname: 'comid'

@@ -4,7 +4,7 @@
 \alias{check_attr_selection}
 \title{Check that attributes selected by user are available}
 \usage{
-check_attr_selection(attr_cfg_path = NULL, vars = NULL)
+check_attr_selection(attr_cfg_path = NULL, vars = NULL, verbose = TRUE)
 }
 \arguments{
 \item{attr_cfg_path}{a path to a .yaml configuration file specifying which
@@ -23,5 +23,5 @@ in the attribute menu as specified.
 }
 }
 \author{
-Lauren Bolotin \email{lauren.bolotin@noaa.gov}
+Lauren Bolotin \email{lauren.bolotin@noaa.gov }
 }

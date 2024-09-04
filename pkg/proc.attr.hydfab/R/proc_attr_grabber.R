@@ -725,6 +725,4 @@ check_attr_selection <- function(attr_cfg_path = NULL, vars = NULL, verbose = TR
   }
   return(missing_vars)
 }
-check_attr_selection(attr_cfg_path)
-
 

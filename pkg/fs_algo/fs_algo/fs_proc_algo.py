@@ -27,6 +27,8 @@ if __name__ == "__main__":
     if algo_config['mlp']['hidden_layer_sizes']: # purpose: evaluate string literal to a tuple
         algo_config['mlp']['hidden_layer_sizes'] = ast.literal_eval(algo_config['mlp']['hidden_layer_sizes'])
 
+    # TODO change this!! 
+    # TODO allow full path to specified
     name_attr_config = algo_cfg.get('name_attr_config', Path(path_algo_config).name.replace('algo','attr'))
     path_attr_config = Path(Path(path_algo_config).parent/name_attr_config)
     verbose = algo_cfg['verbose']

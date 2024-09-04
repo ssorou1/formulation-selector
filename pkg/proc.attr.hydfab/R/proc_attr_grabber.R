@@ -638,65 +638,84 @@ grab_attrs_datasets_fsds_wrap <- function(Retr_Params,lyrs="network",overwrite=F
   return(ls_comids_all)
 }
 
-check_attr_selection <- function(attr_cfg_path = NULL, vars = NULL){
+check_attr_selection <- function(attr_cfg_path = NULL, vars = NULL, verbose = TRUE){
+  #' @title Check that attributes selected by user are available
+  #' @author Lauren Bolotin \email{lauren.bolotin@noaa.gov }
+  #' @description Sees if the attributes requested by a user matches with the 
+  #'  attributes supported by the package, listed in the attribute menu. 
+  #'  Returns list of
+  #'   - missing_vars: a list of the requested variables that were not found
+  #'        in the attribute menu as specified. 
+  #' @param attr_cfg_path a path to a .yaml configuration file specifying which 
+  #'        attributes a user is requesting
+  #' @param vars a list specifying which attributes a user is requesting, in lieu
+  #'        of a list coming from a .yaml configuration file
+
   # Read in the menu of attributes available through FSDS
-  attr_menu <- yaml::read_yaml('./fsds_attr_menu.yaml')
+  dir_base <- system.file("extdata",package="proc.attr.hydfab")
+  attr_menu <- base::paste0(dir_base, '/fsds_attr_menu.yaml')
+  attr_menu <- yaml::read_yaml(attr_menu)
+  dataset_indices <- seq(1, base::length(attr_menu))
   
   if(!is.null(attr_cfg_path)){
 
     # Read in the user defined config of attributes of interest
-    # attr_cfg_path <- '../../scripts/eval_ingest/xssa/xssa_attr_config.yaml'
+    # attr_cfg_path <- 'paste0(dir_base, '/xssa_attr_config_all_vars_avail.yaml'
     attr_cfg <- yaml::read_yaml(attr_cfg_path)
+    attr_cfg_sel <- attr_cfg[['attr_select']] # select the section for attributes
+    vars_sel <- attr_cfg_sel|> base::unlist() |> base::unname()
+
+    print_query <- function(dataset_index, verbose = verbose){
+      dataset <- attr_cfg_sel[[dataset_index]] |> names()
+      vars <- attr_cfg_sel[[dataset_index]] |> unlist() |> unname()
+      if (!is.null(vars)){
+        vars <- paste0(vars, collapse = ', ')
+        msg <- glue::glue('Checking the ', dataset, 
+                          ' dataset for the following requested attributes: \n', 
+                          vars)
+        message(msg)
+      }
+      
+    }
+    if(verbose){
+      lapply(dataset_indices, print_query)
+    }
     
-    # Determine which data sets the user specifies attributes from
-    ha_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
-      base::unlist() %>% base::grep(pattern = "ha_vars")
-    ha_vars_sel <- base::sapply(ha_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
-      unlist() |> 
-      unname() 
+    # For verbose = TRUE messaging.....
+    # vars_sel_names <- paste0(vars_sel, collapse = ', ')
     
-    usgs_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
-      base::unlist() %>% base::grep(pattern = "usgs_vars")
-    usgs_vars_sel <- base::sapply(usgs_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
-      unlist() |> 
-      unname() 
+    # Identify which attribute datasets are being queried
+    # datasets <- base::lapply(attr_cfg_sel,
+    #                               function(x) base::names(x)[[1]]) %>% unlist() 
+    # dataset_names <- paste0(datasets, collapse = ', ')
     
-    # sc_vars_sel <- base::lapply(attr_cfg$attr_select, function(x) names(x)) %>%
-    #   base::unlist() %>% base::grep(pattern = "sc_vars")
-    # sc_vars_sel <- base::sapply(sc_vars_sel, function(x) attr_cfg$attr_select[[x]]) |> 
-    #   unlist() |> 
-    #   unname()
+    # if(verbose){
+    #   message(paste0('Checking for attributes from the following datasets:\n',
+    #                  dataset_names, '\nChecking that the following requested attributes are available:\n',
+    #                  vars_sel_names))
+    # }
     
-    vars_sel <- c(ha_vars_sel, usgs_vars_sel) # camels_vars_sel, sc_vars_sel
-    rm(ha_vars_sel, usgs_vars_sel) # camels_vars_sel, sc_vars_sel
   }
-  if(is.null(attr_cfg_path) & !is.null(vars)){
+  else if(is.null(attr_cfg_path) & !is.null(vars)){
     # vars <- c("TOT_twi","TOT_PRSNOW","TOT_POPDENS90","TOT_EWT","TOT_RECHG","TOT_BFI")
     vars_sel <- vars
   }
   
-  # Check if the entered variables exist in the attribute menu
-  ha_menu <- base::unlist(attr_menu$hydroatlas_attributes) |> 
-    base::names() 
-  
-  usgs_menu <- base::unlist(attr_menu$usgs_attributes) |> 
-    base::names() 
-  
-  # sc_menu <- base::unlist(attr_menu$sc_attributes) |>
-  #   base::names()
-  
-  camels_menu <- base::unlist(attr_menu$camels_attributes) |> 
-    base::names() 
-  
-  vars_menu <- c(ha_menu, camels_menu, usgs_menu) # sc_menu
-  rm(ha_menu, usgs_menu, camels_menu) # sc_menu
+  vars_menu <- NA
+  # Compile the attribute menu into one list of variables
+  create_menu_list <- function(dataset_index){
+      dataset_vars <- attr_menu[[dataset_index]] |> base::unlist() |> base::names()
+      vars_menu <<- c(vars_menu, dataset_vars)
+    }
+  lapply(dataset_indices, create_menu_list)
+
   
   # Warn the user of any requested attrs that are missing
-  missing_vars <- vars_sel[which(!vars_sel %in% vars_menu)] 
-  missing_vars_list <- paste0(missing_vars, collapse=', ')
+  missing_vars <- vars_sel[base::which(!vars_sel %in% vars_menu)] 
+  missing_vars_list <- base::paste0(missing_vars, collapse=', ')
 
   # Only print a warning if the user requested unavailable attrs:
-  if (length(missing_vars) > 0){
+  if (base::length(missing_vars) > 0){
     # Tell the user they asked for something that's not available
     warn_msg <- glue::glue('The following attributes, as specified, were not found in the attribute menu:\n',
                  missing_vars_list, '\nPlease check spelling, capitalization, etc. and revise the *_attr_config.yaml', sep = ',')
@@ -706,6 +725,6 @@ check_attr_selection <- function(attr_cfg_path = NULL, vars = NULL){
   }
   return(missing_vars)
 }
-
+check_attr_selection(attr_cfg_path)
 
 

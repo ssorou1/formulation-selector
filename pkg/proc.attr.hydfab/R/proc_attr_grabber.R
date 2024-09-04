@@ -663,11 +663,11 @@ check_attr_selection <- function(attr_cfg_path = NULL, vars = NULL, verbose = TR
     # attr_cfg_path <- 'paste0(dir_base, '/xssa_attr_config_all_vars_avail.yaml'
     attr_cfg <- yaml::read_yaml(attr_cfg_path)
     attr_cfg_sel <- attr_cfg[['attr_select']] # select the section for attributes
-    vars_sel <- attr_cfg_sel|> base::unlist() |> base::unname()
+    vars_sel <- attr_cfg_sel%>% base::unlist() %>% base::unname()
 
     print_query <- function(dataset_index, verbose = verbose){
-      dataset <- attr_cfg_sel[[dataset_index]] |> names()
-      vars <- attr_cfg_sel[[dataset_index]] |> unlist() |> unname()
+      dataset <- attr_cfg_sel[[dataset_index]] %>% names()
+      vars <- attr_cfg_sel[[dataset_index]] %>% unlist() %>% unname()
       if (!is.null(vars)){
         vars <- paste0(vars, collapse = ', ')
         msg <- glue::glue('Checking the ', dataset, 
@@ -704,7 +704,7 @@ check_attr_selection <- function(attr_cfg_path = NULL, vars = NULL, verbose = TR
   vars_menu <- NA
   # Compile the attribute menu into one list of variables
   create_menu_list <- function(dataset_index){
-      dataset_vars <- attr_menu[[dataset_index]] |> base::unlist() |> base::names()
+      dataset_vars <- attr_menu[[dataset_index]] %>% base::unlist() %>% base::names()
       vars_menu <<- c(vars_menu, dataset_vars)
     }
   lapply(dataset_indices, create_menu_list)

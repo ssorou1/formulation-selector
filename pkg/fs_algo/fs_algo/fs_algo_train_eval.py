@@ -244,6 +244,31 @@ def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] 
 
     return comids_resp
 
+def build_cfig_path(path_known_config:str | os.PathLike, path_or_name_cfig:str | os.PathLike) -> os.PathLike | None:
+    """Build the expected configuration file path within the RAFTS framework
+
+    :param path_known_config: path of the known configuration sent 
+    :type path_known_config: str | os.PathLike
+    :param path_or_name_cfig: Path or name of configuration file. If only name provided, it's assumed it resides in same directory as `path_known_config`
+    :type path_or_name_cfig: str | os.PathLike
+    :raises FileNotFoundError: The provided `path_known_config` does not exist
+    :raises FileNotFoundError: The desired configuration file does not exist
+    :return: The path to another relevant configuration file used for a different step in RAFTS processing
+    :rtype: os.PathLike | None
+    """
+    dir_parent_cfig = Path(path_known_config).parent
+    if not dir_parent_cfig.exists():
+        raise FileNotFoundError(f"The provided 'known' configuration file does not exist: \n{path_known_config}")
+    if path_or_name_cfig: # Only perform if path_or_name_cfig not None
+        path_cfig = Path(dir_parent_cfig/Path(path_or_name_cfig))
+        if not path_cfig.exists():
+            path_cfig = Path(path_or_name_cfig)
+            if not path_cfig.exists():
+                raise FileNotFoundError(f'The following configuration file could not be found: \n{path_or_name_cfig}')
+    else:
+        warnings.warn("The configuration file may not have specified the path or file name.")
+        path_cfig = None
+    return path_cfig
 
 def fs_save_algo_dir_struct(dir_base: str | os.PathLike ) -> dict:
     """Generate a standard file saving directory structure

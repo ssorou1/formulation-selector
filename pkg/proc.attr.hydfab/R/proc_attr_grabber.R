@@ -681,25 +681,13 @@ check_attr_selection <- function(attr_cfg_path = NULL, vars = NULL, verbose = TR
       lapply(dataset_indices, print_query)
     }
     
-    # For verbose = TRUE messaging.....
-    # vars_sel_names <- paste0(vars_sel, collapse = ', ')
-    
-    # Identify which attribute datasets are being queried
-    # datasets <- base::lapply(attr_cfg_sel,
-    #                               function(x) base::names(x)[[1]]) %>% unlist() 
-    # dataset_names <- paste0(datasets, collapse = ', ')
-    
-    # if(verbose){
-    #   message(paste0('Checking for attributes from the following datasets:\n',
-    #                  dataset_names, '\nChecking that the following requested attributes are available:\n',
-    #                  vars_sel_names))
-    # }
-    
-  }
-  else if(is.null(attr_cfg_path) & !is.null(vars)){
+  } else if(!is.null(vars)){
     # vars <- c("TOT_twi","TOT_PRSNOW","TOT_POPDENS90","TOT_EWT","TOT_RECHG","TOT_BFI")
     vars_sel <- vars
+  } else {
+    stop("Must provide attr_cfg_path or vars as arguments to check_attr_selection")
   }
+  
   
   vars_menu <- NA
   # Compile the attribute menu into one list of variables

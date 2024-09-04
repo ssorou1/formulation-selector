@@ -345,10 +345,55 @@ def std_algo_path(dir_out_alg_ds:str | os.PathLike, algo: str, metric: str, data
     :return: full save path for joblib object
     :rtype: str
     """
+    Path(dir_out_alg_ds).mkdir(exist_ok=True,parents=True)
     basename_alg_ds_metr = f'algo_{algo}_{metric}__{dataset_id}'
     path_algo = Path(dir_out_alg_ds) / Path(basename_alg_ds_metr + '.joblib')
     return path_algo
 
+def std_pred_path(dir_out: str | os.PathLike, algo: str, metric: str, dataset_id: str) -> str:
+    """Standardize the prediction results save path
+
+    :param dir_out: The base directory for saving output
+    :type dir_out: str | os.PathLike
+    :param algo: The type of algorithm
+    :type algo: str
+    :param metric: The metric or hydrologic signature identifier of interest
+    :type metric: str
+    :param dataset_id: Unique identifier/descriptor of the dataset of interest
+    :type dataset_id: str
+    :return: full save path for parquet dataframe object of results
+    :rtype: str
+    """
+    dir_preds_base = Path(Path(dir_out)/Path('algorithm_predictions'))
+    dir_preds_ds = Path(dir_preds_base/Path(dataset_id))
+    dir_preds_ds.mkdir(exist_ok=True,parents=True)
+    basename_pred_alg_ds_metr = f"pred_{algo}_{metric}__{dataset_id}.parquet"
+    path_pred_rslt = Path(dir_preds_ds)/Path(basename_pred_alg_ds_metr)
+    return path_pred_rslt
+
+def _read_pred_comid(path_pred_locs: str | os.PathLike, comid_pred_col:str ) -> list[str]:
+    """Read the comids from a prediction file formatted as .csv
+
+    :param path_pred_locs: The path to prediction data location, containing the comid
+    :type path_pred_locs: str | os.PathLike
+    :param comid_pred_col: The column name corresponding to the comid inside the prediction location dataset
+    :type comid_pred_col: str
+    :raises ValueError: Could not read the location data file and/or subselect the comid column
+    :raises ValueError: File extension of location data file not recognized
+    :return: list of comids
+    :rtype: list[str]
+    """
+    if not Path(path_pred_locs).exists():
+        FileNotFoundError(f"The path to prediction location data could not be found: \n{path_pred_locs} ")
+    if '.csv' in Path(path_pred_locs).suffix:
+        try:
+            comids_pred = pd.read_csv(path_pred_locs)[comid_pred_col].values
+        except:
+            raise ValueError(f"Could not successfully read in {path_pred_locs} & select col {comid_pred_col}")
+    else:
+        raise ValueError(f"NEED TO ADD CAPABILITY THAT HANDLES {Path(path_pred_locs).suffix} file extensions")
+    comids_pred = [str(x) for x in comids_pred]
+    return comids_pred
 class AlgoTrainEval:
     def __init__(self, df: pd.DataFrame, attrs: Iterable[str], algo_config: dict,
                  dir_out_alg_ds: str | os.PathLike, dataset_id: str,

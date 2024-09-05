@@ -498,7 +498,9 @@ class AlgoTrainEval:
             if self.verbose:
                 print(f"      Performing Random Forest Training")
             rf = RandomForestRegressor(n_estimators=self.algo_config['rf'].get('n_estimators'),
-                                       random_state=self.rs)
+                                       oob_score=True,
+                                       random_state=self.rs,
+                                       )
             pipe_rf = make_pipeline(rf)                           
             pipe_rf.fit(self.X_train, self.y_train)
             self.algs_dict['rf'] = {'algo': rf,

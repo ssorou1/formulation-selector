@@ -25,6 +25,7 @@ from fs_algo.fs_algo_train_eval import AlgoTrainEval, AttrConfigAndVars
 from fs_algo import fs_algo_train_eval
 import warnings
 import xarray as xr
+import os
 # %% UNIT TESTING FOR NHDplus/dataset munging
 # class TestFsReadAttrComid(unittest.TestCase):
    
@@ -266,6 +267,34 @@ class TestFindFeatSrceId(unittest.TestCase):
                 }
         rslt = fs_algo_train_eval._find_feat_srce_id(dat_resp = mock_xr, attr_config = attr_config)
         self.assertEqual(rslt,['nwissite','USGS-{gage_id}'])
+
+class build_cfig_path(unittest.TestCase):
+    def test_build_cfig_path(self):
+        dir_base = tempfile.gettempdir()
+        dir_new = Path(dir_base)/Path('testingitout')
+        dir_new.mkdir(exist_ok=True)
+        with self.assertRaises(FileNotFoundError):
+            path_cfig = fs_algo_train_eval.build_cfig_path(dir_new,'test.yaml')
+
+        with self.assertRaises(FileNotFoundError):
+            fs_algo_train_eval.build_cfig_path('this_dir/doesnt/exist','test.yaml')
+
+        with self.assertWarns(UserWarning):
+            fs_algo_train_eval.build_cfig_path(dir_new,'')
+
+    @patch('pathlib.Path.exists')
+    def test_file_exists(self, mock_exists):
+        dir_base = tempfile.gettempdir()
+        dir_new = Path(dir_base)/Path('testingitout')
+        path_known_config = Path(dir_new)/Path('test.yaml')
+        path_or_name_cfig = Path(dir_new)/Path('a_nother_config.yaml')
+
+        # Mock the existence of the directories and files, side_effect attr of mock object allws specifying a function or iterable called e/ time mock is called
+        mock_exists.side_effect = lambda: True # Tells the mock object to return True everytime the path.exists method called
+        rslt = fs_algo_train_eval.build_cfig_path(path_known_config, path_or_name_cfig)
+        # Assert
+        self.assertEqual(rslt, path_or_name_cfig)
+        self.assertEqual(mock_exists.call_count, 2)
 
 class TestFsSaveAlgoDirStruct(unittest.TestCase):
     def test_fs_save_algo_dir_struct(self):

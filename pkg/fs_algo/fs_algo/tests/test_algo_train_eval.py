@@ -314,7 +314,28 @@ class TestOpenResponseDataFsds(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, 'Could not identify an approach to read in dataset'):
             fs_algo_train_eval._open_response_data_fsds(self.dir_std_base,ds='not_a_ds')
+#%% ALGO TRAIN & EVAL
+class TestStdAlgoPath(unittest.TestCase):
 
+    @patch('pathlib.Path.mkdir')
+    @patch('pathlib.Path.exists')
+    def test_std_algo_path(self, mock_exists, mock_mkdir):
+        # Arrange
+        dir_out_alg_ds = '/some/directory'
+        algo = 'test_algo'
+        metric = 'test_metric'
+        dataset_id = 'test_dataset'
+        expected_path = Path(dir_out_alg_ds) / 'algo_test_algo_test_metric__test_dataset.joblib'
+
+        # Mock the existence of the directory
+        mock_exists.return_value = True
+
+        # Act
+        result = std_algo_path(dir_out_alg_ds, algo, metric, dataset_id)
+
+        # Assert
+        mock_mkdir.assert_called_once_with(exist_ok=True, parents=True)
+        self.assertEqual(result, expected_path)
 
 # %% UNIT TEST FOR AlgoTrainEval class
 class TestAlgoTrainEval(unittest.TestCase):

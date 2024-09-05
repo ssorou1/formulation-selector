@@ -320,7 +320,6 @@ class TestStdAlgoPath(unittest.TestCase):
     @patch('pathlib.Path.mkdir')
     @patch('pathlib.Path.exists')
     def test_std_algo_path(self, mock_exists, mock_mkdir):
-        # Arrange
         dir_out_alg_ds = '/some/directory'
         algo = 'test_algo'
         metric = 'test_metric'
@@ -330,12 +329,60 @@ class TestStdAlgoPath(unittest.TestCase):
         # Mock the existence of the directory
         mock_exists.return_value = True
 
-        # Act
-        result = std_algo_path(dir_out_alg_ds, algo, metric, dataset_id)
-
-        # Assert
+        result = fs_algo_train_eval.std_algo_path(dir_out_alg_ds, algo, metric, dataset_id)
         mock_mkdir.assert_called_once_with(exist_ok=True, parents=True)
         self.assertEqual(result, expected_path)
+
+class TestStdPredPath(unittest.TestCase):
+    @patch('pathlib.Path.mkdir')
+    @patch('pathlib.Path.exists')
+    def test_std_pred_path(self, mock_exists, mock_mkdir):
+        dir_out = '/some/directory'
+        algo = 'test_algo'
+        metric = 'test_metric'
+        dataset_id = 'test_dataset'
+        expected_path = Path(dir_out) / 'algorithm_predictions' / dataset_id / 'pred_test_algo_test_metric__test_dataset.parquet'
+
+        # Mock the existence of the directory
+        mock_exists.return_value = True
+        result = fs_algo_train_eval.std_pred_path(dir_out, algo, metric, dataset_id)
+
+        mock_mkdir.assert_called_once_with(exist_ok=True, parents=True)
+        self.assertEqual(result, expected_path)
+
+class TestReadPredComid(unittest.TestCase):
+    @patch('pathlib.Path.exists')
+    @patch('pandas.read_csv')
+    def test_read_pred_comid(self, mock_read_csv, mock_exists):
+        # Arrange
+        path_pred_locs = '/some/directory/predictions.csv'
+        comid_pred_col = 'comid'
+        mock_exists.return_value = True
+        mock_read_csv.return_value = pd.DataFrame({comid_pred_col: [1, 2, 3]})
+
+        result = fs_algo_train_eval._read_pred_comid(path_pred_locs, comid_pred_col)
+        mock_exists.assert_called_once_with()
+        mock_read_csv.assert_called_once_with(path_pred_locs)
+        self.assertEqual(result, ['1', '2', '3'])
+
+    @patch('pathlib.Path.exists')
+    @patch('pandas.read_csv')
+    def test_read_csv_error(self, mock_read_csv, mock_exists):
+        path_pred_locs = '/some/directory/predictions.csv'
+        comid_pred_col = 'comid'
+        mock_exists.return_value = True
+        mock_read_csv.side_effect = Exception("Read CSV error")
+        with self.assertRaises(ValueError):
+            fs_algo_train_eval._read_pred_comid(path_pred_locs, comid_pred_col)
+
+    @patch('pathlib.Path.exists')
+    def test_unsupported_file_extension(self, mock_exists):
+        path_pred_locs = '/some/directory/predictions.txt'
+        comid_pred_col = 'comid'
+        mock_exists.return_value = True
+        with self.assertRaises(ValueError):
+            fs_algo_train_eval._read_pred_comid(path_pred_locs, comid_pred_col)
+
 
 # %% UNIT TEST FOR AlgoTrainEval class
 class TestAlgoTrainEval(unittest.TestCase):

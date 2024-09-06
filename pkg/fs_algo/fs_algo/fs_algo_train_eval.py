@@ -4,6 +4,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler, FunctionTransformer
 from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import GridSearchCV
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -442,10 +443,9 @@ class AlgoTrainEval:
         self.y_train = pd.Series()
         self.y_test = pd.Series()
         
-        # scaling
-        self.scaler = None
-        self.X_train_sc = pd.DataFrame()
-        self.X_test_sc = pd.DataFrame()
+        # grid search
+        self.algo_config_grid = dict()
+        self.grid_search_algs = list()
 
         # train/pred/eval metadata
         self.algs_dict = {}
@@ -478,15 +478,46 @@ class AlgoTrainEval:
         y = self.df_non_na[self.metric]
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X,y, test_size=self.test_size, random_state=self.rs)
 
-    def normalize_data(self):
-        #df_all = pd.concat([self.X_train, self.X_test]
-        if not self.scaler():
-            self.scaler = Normalizer()
-            self.X_train_sc = self.scaler.fit_transform(self.X_train)
-            self.X_test_sc = self.scalertransform(self.X_test)
+    
+    def convert_to_list(self,d:dict) ->dict:
+        """Runcheck: In situations where self.algo_config_grid is used, all objects must be iterables 
 
+        :param d: A dict containing sub-dicts with key-value pairs
+        :type d: dict
+        :return: The dict where any non-iterable values have been converted into a list
+        :rtype: dict
+        """
+        for key, value in d.items():
+            if isinstance(value, dict):
+                self.convert_to_list(value)
+            elif not isinstance(value, (list, tuple)):
+                d[key] = [value]
+        return(d)
 
-            
+    def select_algs_grid_search(self):
+        """Determines which algorithms' params involve hyperparameter tuning
+        """
+        ls_move_to_srch_cfig = list()
+        for k, alg_dict in self.algo_config.items():
+            sub_dict = {k: alg_dict[k] for k in alg_dict.keys()}
+            totl_opts_per_param = list()
+            for kk, v in sub_dict.items():
+                if isinstance(v,Iterable) and len(v)>1:
+                    totl_opts_per_param.append(len(v))
+                else:
+                    totl_opts_per_param.append(1)
+            if any([x > 1 for x in totl_opts_per_param]):
+                if self.verbose:
+                    print(f"Performing grid search CV for {k}")
+                self.grid_search_algs.append(k)
+                ls_move_to_srch_cfig.append(k)
+
+        # Move hyperparams from basic algo params into grid search params
+        for k in ls_move_to_srch_cfig:
+            self.algo_config_grid[k] = self.algo_config.pop(k)
+
+        if self.algo_config_grid: # If there are non iterable values, convert them to lists to aid the algo training
+            self.algo_config_grid  = self.convert_to_list(self.algo_config_grid)
     def train_algos(self):
         """Train algorithms based on what has been defined in the algo config file Algorithm options include the following:
         
@@ -529,6 +560,52 @@ class AlgoTrainEval:
                                      'pipeline': pipe_mlp,
                                      'type': 'multi-layer perceptron regressor',
                                      'metric': self.metric}
+
+
+    def train_algos_grid_search(self):
+        """Train algorithms using GridSearchCV based on the algo config file.
+        
+        Algorithm options include the following:
+        
+            - `rf` for :class:`sklearn.ensemble.RandomForestRegressor`
+            - `mlp` for :class:`sklearn.neural_network.MLPRegressor`
+        """
+        if 'rf' in self.algo_config_grid:  # RANDOM FOREST
+            if self.verbose:
+                print(f"      Performing Random Forest Training with Grid Search")
+            rf = RandomForestRegressor(oob_score=True, random_state=self.rs)
+            # TODO move into main Param dict
+            param_grid_rf = {
+                'randomforestregressor__n_estimators': self.algo_config_grid['rf'].get('n_estimators', [100, 200, 300])
+            }
+            pipe_rf = make_pipeline(rf)
+            grid_rf = GridSearchCV(pipe_rf, param_grid_rf, cv=5, scoring='neg_mean_absolute_error', n_jobs=-1)
+            grid_rf.fit(self.X_train, self.y_train)
+            self.algs_dict['rf'] = {'algo': grid_rf.best_estimator_,
+                                    'pipeline': grid_rf,
+                                    'type': 'random forest regressor',
+                                    'metric': self.metric}
+
+        if 'mlp' in self.algo_config_grid:  # MULTI-LAYER PERCEPTRON
+            if self.verbose:
+                print(f"      Performing Multilayer Perceptron Training with Grid Search")
+            mlpcfg = self.algo_config_grid['mlp']
+            mlp = MLPRegressor(random_state=self.rs)
+            param_grid_mlp = {
+                'mlpregressor__hidden_layer_sizes': mlpcfg.get('hidden_layer_sizes', [(100,), (50, 50)]),
+                'mlpregressor__activation': mlpcfg.get('activation', ['relu', 'tanh']),
+                'mlpregressor__solver': mlpcfg.get('solver', ['lbfgs', 'adam']),
+                'mlpregressor__alpha': mlpcfg.get('alpha', [0.001, 0.01]),
+                'mlpregressor__learning_rate': mlpcfg.get('learning_rate', ['constant', 'adaptive']),
+                'mlpregressor__max_iter': mlpcfg.get('max_iter', [200, 300])
+            }
+            pipe_mlp = make_pipeline(StandardScaler(), mlp)
+            grid_mlp = GridSearchCV(pipe_mlp, param_grid_mlp, cv=5, scoring='neg_mean_absolute_error', n_jobs=-1)
+            grid_mlp.fit(self.X_train, self.y_train)
+            self.algs_dict['mlp'] = {'algo': grid_mlp.best_estimator_,
+                                    'pipeline': grid_mlp,
+                                    'type': 'multi-layer perceptron regressor',
+                                    'metric': self.metric}
 
     def predict_algos(self) -> dict:
         """ Make predictions with trained algorithms   
@@ -613,8 +690,15 @@ class AlgoTrainEval:
         # Run the train/test split
         self.split_data()
 
-        # Train algorithms # returns self.algs_dict 
-        self.train_algos()
+        # Check whether supplied params designed for grid search:
+        self.select_algs_grid_search()
+
+        # Train algorithms, returns self.algs_dict 
+        if self.grid_search_algs: # Perform hyperparameterization grid search for these algos
+            self.train_algos_grid_search()
+
+        if self.algo_config: # Just run a single simulation for these algos
+            self.train_algos()
 
         # Make predictions  # 
         self.predict_algos()

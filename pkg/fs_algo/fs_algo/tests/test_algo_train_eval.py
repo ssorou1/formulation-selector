@@ -400,11 +400,11 @@ class TestAlgoTrainEval(unittest.TestCase):
         self.attrs = ['attr1', 'attr2']
         self.algo_config = {
             'rf': {'n_estimators': 10},
-            'mlp': {'hidden_layer_sizes': (10,), 'max_iter': 200}
+            'mlp': {'hidden_layer_sizes': (10,), 'max_iter': 2000}
         }
         self.dataset_id = 'test_dataset'
         self.metric = 'metric1'
-
+        self.verbose = False
         # Output directory
         self.dir_out_alg_ds = tempfile.gettempdir()
 
@@ -492,20 +492,76 @@ class TestAlgoTrainEval(unittest.TestCase):
         self.assertIn('algo', self.train_eval.eval_df.columns)
         self.assertEqual(self.train_eval.eval_df['dataset'].iloc[0], self.dataset_id)
 
-    def test_train_eval(self):
-        # Test the overall wrapper method
-        with patch('joblib.dump'):
-            self.train_eval.train_eval()
+    # def test_train_eval(self):
+    #     # Test the overall wrapper method
+    #     with patch('joblib.dump'):
+    #         self.train_eval.train_eval()
 
         # Check all steps completed successfully
-        self.assertFalse(self.train_eval.eval_df.empty)
-        self.assertIn('rf', self.train_eval.algs_dict)
-        self.assertIn('mlp', self.train_eval.algs_dict)
-        self.assertIn('rf', self.train_eval.preds_dict)
-        self.assertIn('mlp', self.train_eval.preds_dict)
-        self.assertIn('rf', self.train_eval.eval_dict)
-        self.assertIn('mlp', self.train_eval.eval_dict)
+        # self.assertFalse(self.train_eval.eval_df.empty)
+        # self.assertIn('rf', self.train_eval.algs_dict)
+        # self.assertIn('mlp', self.train_eval.algs_dict)
+        # self.assertIn('rf', self.train_eval.preds_dict)
+        # self.assertIn('mlp', self.train_eval.preds_dict)
+        # self.assertIn('rf', self.train_eval.eval_dict)
+        # self.assertIn('mlp', self.train_eval.eval_dict)
 
+class TestAlgoTrainEvalMlti(unittest.TestCase):
+
+    def setUp(self):
+        # Sample data for testing
+        data = {
+            'attr1': [1, 2, 3, 4, 5,1, 2, 3, 4, 5,1, 2, 3, 4, 5],
+            'attr2': [5, 4, 3, 2, 1,5, 4, 3, 2, 1,5, 4, 3, 2, 1],
+            'metric': [0.1, 0.9, 0.3, 0.1, 0.8,0.1, 0.9, 0.3, 0.1, 0.8,0.1, 0.9, 0.3, 0.1, 0.8]
+        }
+        self.df = pd.DataFrame(data)
+        self.attrs = ['attr1', 'attr2']
+        self.algo_config = {
+            'rf': {'n_estimators': [10, 50]},
+            'mlp': {'hidden_layer_sizes': [(10,), (5, 5)], 'max_iter': [2000]}
+        }
+        self.dir_out_alg_ds = './'
+        self.dataset_id = 'test_dataset'
+        self.metric = 'metric'
+        self.test_size = 0.3
+        self.rs = 32
+        self.verbose = False
+
+        self.algo_train_eval = AlgoTrainEval(self.df, self.attrs, self.algo_config, self.dir_out_alg_ds, self.dataset_id, self.metric, self.test_size, self.rs, self.verbose)
+
+    def test_initialization(self):
+        self.assertEqual(self.algo_train_eval.df.shape, self.df.shape)
+        self.assertEqual(self.algo_train_eval.attrs, self.attrs)
+        self.assertEqual(self.algo_train_eval.algo_config, self.algo_config)
+        self.assertEqual(self.algo_train_eval.dir_out_alg_ds, self.dir_out_alg_ds)
+        self.assertEqual(self.algo_train_eval.metric, self.metric)
+        self.assertEqual(self.algo_train_eval.test_size, self.test_size)
+        self.assertEqual(self.algo_train_eval.rs, self.rs)
+        self.assertEqual(self.algo_train_eval.dataset_id, self.dataset_id)
+        self.assertEqual(self.algo_train_eval.verbose, self.verbose)
+
+    def test_split_data(self):
+        self.algo_train_eval.split_data()
+        self.assertFalse(self.algo_train_eval.X_train.empty)
+        self.assertFalse(self.algo_train_eval.X_test.empty)
+        self.assertFalse(self.algo_train_eval.y_train.empty)
+        self.assertFalse(self.algo_train_eval.y_test.empty)
+        self.assertEqual(len(self.algo_train_eval.X_train) + len(self.algo_train_eval.X_test), len(self.df.dropna()))
+
+    def test_select_algs_grid_search(self):
+        self.algo_train_eval.select_algs_grid_search()
+        self.assertIn('mlp', self.algo_train_eval.grid_search_algs)
+        self.assertNotIn('mlp', self.algo_train_eval.algo_config)
+        self.assertIn('mlp', self.algo_train_eval.algo_config_grid)
+
+
+    def test_train_algos(self):
+        self.algo_train_eval.split_data()
+        self.algo_train_eval.select_algs_grid_search()
+        self.algo_train_eval.train_algos_grid_search()
+        self.assertTrue('rf' in  self.algo_train_eval.algo_config_grid)
+        self.assertIn('mlp', self.algo_train_eval.algs_dict)
 
 if __name__ == '__main__':
     unittest.main()

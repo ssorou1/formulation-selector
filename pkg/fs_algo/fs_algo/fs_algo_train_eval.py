@@ -614,8 +614,9 @@ class AlgoTrainEval:
             pipe_rf = make_pipeline(rf)
             grid_rf = GridSearchCV(pipe_rf, param_grid_rf, cv=5, scoring='neg_mean_absolute_error', n_jobs=-1)
             grid_rf.fit(self.X_train, self.y_train)
-            self.algs_dict['rf'] = {'algo': grid_rf.best_estimator_,
-                                    'pipeline': grid_rf,
+            self.algs_dict['rf'] = {'algo': grid_rf.best_estimator_.named_steps['randomforestregressor'],
+                                    'pipeline': grid_rf.best_estimator_,
+                                    'gridsearchcv': grid_rf,
                                     'type': 'random forest regressor',
                                     'metric': self.metric}
 

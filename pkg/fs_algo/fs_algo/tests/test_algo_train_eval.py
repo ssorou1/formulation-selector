@@ -444,8 +444,8 @@ class TestAlgoTrainEvalMlti(unittest.TestCase):
         self.df = pd.DataFrame(data)
         self.attrs = ['attr1', 'attr2']
         self.algo_config = {
-            'rf': {'n_estimators': [10, 50]},
-            'mlp': {'hidden_layer_sizes': [(10,), (5, 5)], 'max_iter': [2000]}
+            'rf': [{'n_estimators': [10, 50]}],
+            'mlp': [{'hidden_layer_sizes': [(10,), (5, 5)], 'max_iter': [2000]}]
         }
         self.dir_out_alg_ds = './'
         self.dataset_id = 'test_dataset'
@@ -568,8 +568,8 @@ class TestAlgoTrainEvalBasic(unittest.TestCase):
         })
         self.attrs = ['attr1', 'attr2']
         self.algo_config = {
-            'rf': {'n_estimators': [10,30,40]},
-            'mlp': {'hidden_layer_sizes': (50,)}
+            'rf': [{'n_estimators': [10,30,40]}],
+            'mlp': [{'hidden_layer_sizes': (50,)}]
         }
         self.dir_out_alg_ds = '/tmp'
         self.dataset_id = 'test_ds'

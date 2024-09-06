@@ -50,7 +50,7 @@ class AttrConfigAndVars:
 
         if len(attrs_sel) == None: # If no attributes generated, assume all attributes are of interest
             attrs_sel = 'all'
-            raise warnings.warn(f"No attributes discerned from 'attr_select'. Assuming all attributes desired.")
+            raise warnings.warn(f"No attributes discerned from 'attr_select'. Assuming all attributes desired.",UserWarning)
         
         home_dir = str(Path.home())
         dir_base = list([x for x in self.attr_config['file_io'] if 'dir_base' in x][0].values())[0].format(home_dir=home_dir)
@@ -128,7 +128,10 @@ def fs_read_attr_comid(dir_db_attrs:str | os.PathLike, comids_resp:list | Iterab
         attr_df_sub['value'] = np.float64(attr_df_sub['value'])
 
     if attr_df_sub['value'].isna().any():
-        warnings.warn('The attribute dataset contains unexpected NA values, which may be problematic for some algo training/testing. Consider reprocessing the attribute grabber (fsds.attr.hydfab R package)')
+        warnings.warn('The attribute dataset contains unexpected NA values, \
+                      which may be problematic for some algo training/testing. \
+                      \nConsider reprocessing the attribute grabber (fsds.attr.hydfab R package)',
+                      UserWarning)
 
     return attr_df_sub
 
@@ -241,7 +244,7 @@ def fs_retr_nhdp_comids(featureSource:str,featureID:str,gage_ids: Iterable[str] 
     
     if len(comids_resp) != len(gage_ids) or comids_resp.count(None) > 0: # May not be an important check
         raise warnings.warn("The total number of retrieved comids does not match \
-                      total number of provided gage_ids")
+                      total number of provided gage_ids",UserWarning)
 
     return comids_resp
 
@@ -267,7 +270,7 @@ def build_cfig_path(path_known_config:str | os.PathLike, path_or_name_cfig:str |
             if not path_cfig.exists():
                 raise FileNotFoundError(f'The following configuration file could not be found: \n{path_or_name_cfig}')
     else:
-        warnings.warn("The configuration file may not have specified the path or file name.")
+        warnings.warn("The configuration file may not have specified the path or file name.",UserWarning)
         path_cfig = None
     return path_cfig
 
@@ -471,7 +474,7 @@ class AlgoTrainEval:
                 \n   !!!!!!!!!!!!!!!!!!!\
                 \n   NA VALUES FOUND IN INPUT DATASET!! \
                 \n   DROPPING {self.df.shape[0] - self.df_non_na.shape[0]} ROWS OF DATA. \
-                \n   !!!!!!!!!!!!!!!!!!! \n\n")
+                \n   !!!!!!!!!!!!!!!!!!!",UserWarning)
             
 
         X = self.df_non_na[self.attrs]
@@ -693,7 +696,7 @@ class AlgoTrainEval:
         # Check whether supplied params designed for grid search:
         self.select_algs_grid_search()
 
-        # Train algorithms, returns self.algs_dict 
+        # Train algorithms; returns self.algs_dict 
         if self.grid_search_algs: # Perform hyperparameterization grid search for these algos
             self.train_algos_grid_search()
 
@@ -703,10 +706,10 @@ class AlgoTrainEval:
         # Make predictions  # 
         self.predict_algos()
 
-        # Evaluate predictions # returns self.eval_dict
+        # Evaluate predictions; returns self.eval_dict
         self.evaluate_algos()
 
-        # Write algorithms to file # returns self.algs_dict_paths
+        # Write algorithms to file; returns self.algs_dict_paths
         self.save_algos()
 
         # Generate metadata dataframe

@@ -26,28 +26,6 @@ from fs_algo import fs_algo_train_eval
 import warnings
 import xarray as xr
 import os
-# %% UNIT TESTING FOR NHDplus/dataset munging
-# class TestFsReadAttrComid(unittest.TestCase):
-   
-
-
-# class TestFsRetrNhdpComids(unittest.TestCase):
-#     @patch('fs_algo.fs_alg_train_eval.nldi.navigate_byid')
-
-# class TestCheckAttributesExist(unittest.TestCase):
-#     print("Testing _check_attributes_exist")
-#     # Mock DataFrame
-#     mock_pdf = pd.DataFrame({
-#         'data_source': 'hydroatlas__v1',
-#         'dl_timestamp': '2024-07-26 08:59:36',
-#         'attribute': ['pet_mm_s01', 'cly_pc_sav'],
-#         'value': [58, 21],
-#         'featureID': '1520007',
-#         'featureSource': 'COMID'
-#     })
-#     fs_algo_train_eval._check_attributes_exist(mock_pdf, ['pet_mm_s01','cly_pc_sav'])
-
-
 
 # %% UNIT TESTING FOR AttrConfigAndVars
 
@@ -159,44 +137,6 @@ class TestCheckAttributesExist(unittest.TestCase):
         with self.assertWarns(UserWarning):
             fs_algo_train_eval._check_attributes_exist(mock_pdf_bad,pd.Series(['pet_mm_s01','cly_pc_sav']))
         
-        # # with warnings.catch_warnings(record = True) as w:
-        # #     warnings.simplefilter("always")
-        # #     fs_algo_train_eval._check_attributes_exist(mock_pdf_bad,pd.Series(['pet_mm_s01','cly_pc_sav']))
-        # #     self.assertEqual(len(w),1)
-        
-        # mock_pdf_bad1 = mock_pdf.copy()
-        # mock_pdf_bad1['attribute'] = 'cly_pc_sav'
-
-        # with self.assertWarns(UserWarning):
-        #     fs_algo_train_eval._check_attributes_exist(mock_pdf_bad1,pd.Series(['pet_mm_s01','cly_pc_sav']))
-        
-        
-        # with warnings.catch_warnings(record = True) as w:
-        #     warnings.simplefilter("always")
-        #     fs_algo_train_eval._check_attributes_exist(mock_pdf_bad1,pd.Series(['pet_mm_s01','cly_pc_sav']))
-        #     self.assertEqual(len(w),1)
-
-    # @patch('fs_algo.fs_algo_train_eval.yaml.safe_load')
-    # def test_no_attrs_warning(self, mock_home, mock_file):
-    #     mock_dict_attr_config = {'attr_select': {'attr_vars': ['attr1','attr2']},
-    #                              'file_io': {'dir_base': '/path/dir/base',
-    #                                          'dir_db_attrs':'/path/dir/db/attrs',
-    #                                          'dir_std_base':'/path/dir/std/base'},
-    #                             'formulation_metadata':{'datasets':'test_ds'}}
-
-    # # @patch('pathlib.Path.home', return_value='/mocked/home')
-    # def test_no_attrs_warning(self, mock_home, mock_file):
-    #     path = '/path/to/config.yaml'
-    #     attr_obj = AttrConfigAndVars(path)
-
-        # TODO investigate this here. Began failing after 
-        # # Test if the Warning is raised correctly
-        # with self.assertWarns(Warning):
-        #     attr_obj._read_attr_config()
-
-        # Verify the default behavior when no attributes are selected
-        # self.assertEqual(attr_obj.attrs_cfg_dict['attrs_sel'], 'all')
-
 
 class TestFsRetrNhdpComids(unittest.TestCase):
 
@@ -320,7 +260,7 @@ class TestStdAlgoPath(unittest.TestCase):
     @patch('pathlib.Path.mkdir')
     @patch('pathlib.Path.exists')
     def test_std_algo_path(self, mock_exists, mock_mkdir):
-        dir_out_alg_ds = '/some/directory'
+        dir_out_alg_ds = tempfile.gettempdir()
         algo = 'test_algo'
         metric = 'test_metric'
         dataset_id = 'test_dataset'
@@ -492,20 +432,6 @@ class TestAlgoTrainEval(unittest.TestCase):
         self.assertIn('algo', self.train_eval.eval_df.columns)
         self.assertEqual(self.train_eval.eval_df['dataset'].iloc[0], self.dataset_id)
 
-    # def test_train_eval(self):
-    #     # Test the overall wrapper method
-    #     with patch('joblib.dump'):
-    #         self.train_eval.train_eval()
-
-        # Check all steps completed successfully
-        # self.assertFalse(self.train_eval.eval_df.empty)
-        # self.assertIn('rf', self.train_eval.algs_dict)
-        # self.assertIn('mlp', self.train_eval.algs_dict)
-        # self.assertIn('rf', self.train_eval.preds_dict)
-        # self.assertIn('mlp', self.train_eval.preds_dict)
-        # self.assertIn('rf', self.train_eval.eval_dict)
-        # self.assertIn('mlp', self.train_eval.eval_dict)
-
 class TestAlgoTrainEvalMlti(unittest.TestCase):
 
     def setUp(self):
@@ -563,5 +489,147 @@ class TestAlgoTrainEvalMlti(unittest.TestCase):
         self.assertTrue('rf' in  self.algo_train_eval.algo_config_grid)
         self.assertIn('mlp', self.algo_train_eval.algs_dict)
 
+
+
+    def test_empty_dict(self):
+        d = {}
+        self.algo_train_eval.convert_to_list(d)
+        self.assertEqual(d, {})
+
+    def test_single_level_dict(self):
+        d = {'a': 1, 'b': 2}
+        self.algo_train_eval.convert_to_list(d)
+        self.assertEqual(d, {'a': [1], 'b': [2]})
+
+    def test_nested_dict(self):
+        d = {'a': {'sub1': 1, 'sub2': 2}, 'b': {'sub1': 3, 'sub2': {'subsub1': 4}}, 'c': 5}
+        self.algo_train_eval.convert_to_list(d)
+        self.assertEqual(d, {'a': {'sub1': [1], 'sub2': [2]}, 'b': {'sub1': [3], 'sub2': {'subsub1': [4]}}, 'c': [5]})
+
+    def test_already_list(self):
+        d = {'a': [1, 2], 'b': {'sub1': [3, 4]}}
+        self.algo_train_eval.convert_to_list(d)
+        self.assertEqual(d, {'a': [1, 2], 'b': {'sub1': [3, 4]}})
+
+
+class TestAlgoTrainEvalSngl(unittest.TestCase):
+    # An algo_config with singular hyperparameter value
+    def setUp(self):
+        # Sample data for testing
+        self.df = pd.DataFrame({
+            'attr1': [1, 2, 3, 4, 5],
+            'attr2': [5, 4, 3, 2, 1],
+            'metric': [1, 0, 1, 0, 1]
+        })
+        self.attrs = ['attr1', 'attr2']
+        self.algo_config = {'some_algo': {'param1': 1}}
+        self.dir_out_alg_ds = 'some/dir'
+        self.dataset_id = 'dataset_1'
+        self.metr = 'metric'
+        self.test_size = 0.3
+        self.rs = 32
+        self.verbose = False
+        self.algo_config_grid = dict()
+        self.grid_search_algs=list()
+
+        self.algo_train_eval = AlgoTrainEval(
+            self.df, self.attrs, self.algo_config, self.dir_out_alg_ds,
+            self.dataset_id, self.metr, self.test_size, self.rs, self.verbose
+        )
+
+    @patch.object(AlgoTrainEval, 'split_data')
+    @patch.object(AlgoTrainEval, 'select_algs_grid_search')
+    @patch.object(AlgoTrainEval, 'train_algos_grid_search')
+    @patch.object(AlgoTrainEval, 'train_algos')
+    def test_train_eval(self, mock_train_algos, mock_train_algos_grid_search, mock_select_algs_grid_search, mock_split_data):
+        # Mock the methods to avoid actual execution
+        mock_split_data.return_value = None
+        mock_select_algs_grid_search.return_value = None
+        mock_train_algos_grid_search.return_value = None
+        mock_train_algos.return_value = None
+
+        # Call the method
+        self.algo_train_eval.train_eval()
+
+        # Assert that the methods were or were not called
+        mock_split_data.assert_called_once()
+        mock_select_algs_grid_search.assert_called_once()
+        mock_train_algos_grid_search.assert_not_called()
+        mock_train_algos.assert_called_once()
+
+class TestAlgoTrainEvalBasic(unittest.TestCase):
+
+    def setUp(self):
+        # Set up a small test dataframe
+        self.df = pd.DataFrame({
+            'attr1': [1, 2, 3, 4, 5,1, 2, 3, 4, 5,1, 2, 3, 4, 5],
+            'attr2': [5, 4, 3, 2, 1,5, 4, 3, 2, 1,5, 4, 3, 2, 1],
+            'target': [10, 15, 20, 25, 30,10, 15, 20, 25, 30,10, 15, 20, 25, 30]
+        })
+        self.attrs = ['attr1', 'attr2']
+        self.algo_config = {
+            'rf': {'n_estimators': [10,30,40]},
+            'mlp': {'hidden_layer_sizes': (50,)}
+        }
+        self.dir_out_alg_ds = '/tmp'
+        self.dataset_id = 'test_ds'
+        self.metric = 'target'
+        self.test_size = 0.2
+        self.rs = 42
+        self.verbose = False
+        self.algo_config_grid = dict()
+        self.algo = AlgoTrainEval(self.df, self.attrs, self.algo_config,
+                                  self.dir_out_alg_ds, self.dataset_id, 
+                                  self.metric, self.test_size, self.rs, 
+                                  self.verbose)
+
+    @patch('joblib.dump')  # Mock saving the model to disk
+    @patch('sklearn.model_selection.train_test_split', return_value=(pd.DataFrame(), pd.DataFrame(), pd.Series(), pd.Series()))
+    @patch('sklearn.ensemble.RandomForestRegressor')
+    @patch('sklearn.neural_network.MLPRegressor')
+    def test_train_eval(self, MockMLP, MockRF, mock_train_test_split, mock_joblib_dump):
+        # Mocking train algorithms
+        mock_rf_model = MagicMock()
+        mock_mlp_model = MagicMock()
+
+        # Assign these mock models to the mock class
+        MockRF.return_value = mock_rf_model
+        MockMLP.return_value = mock_mlp_model
+
+        # Mock the predictions
+        mock_rf_model.predict.return_value = [10, 20, 30]
+        mock_mlp_model.predict.return_value = [15, 25, 35]
+
+        # Run the method
+        self.algo.train_eval()
+
+        # Check if the train_test_split was called correctly
+        #mock_train_test_split.assert_called()
+
+        # Check that the RandomForest and MLP models were trained
+        # MockRF.assert_called_once()
+        # MockMLP.assert_called_once()
+        # self.assertIn('rf',self.algo_config_grid)
+        # self.assertIn('mlp',self.algo_config)
+
+        # Check predictions and evaluations were made
+        self.assertIn('rf', self.algo.preds_dict)
+        self.assertIn('mlp', self.algo.preds_dict)
+
+
+
+        self.assertIn('rf', self.algo.eval_dict)
+        self.assertIn('mlp', self.algo.eval_dict)
+
+        # Check if models were saved
+        mock_joblib_dump.assert_called()
+
+        # Check eval dataframe was created
+        self.assertIsInstance(self.algo.eval_df, pd.DataFrame)
+        self.assertFalse(self.algo.eval_df.empty)
+
+
 if __name__ == '__main__':
     unittest.main()
+
+# %%

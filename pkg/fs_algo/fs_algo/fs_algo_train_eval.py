@@ -470,7 +470,7 @@ class AlgoTrainEval:
         # Check for NA values first
         self.df_non_na = self.df[self.attrs + [self.metric]].dropna()
         if self.df_non_na.shape[0] < self.df.shape[0]:
-            warnings.warn(f"\n\n \
+            warnings.warn(f"\
                 \n   !!!!!!!!!!!!!!!!!!!\
                 \n   NA VALUES FOUND IN INPUT DATASET!! \
                 \n   DROPPING {self.df.shape[0] - self.df_non_na.shape[0]} ROWS OF DATA. \

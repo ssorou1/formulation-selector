@@ -157,19 +157,23 @@ def _check_attributes_exist(df_attr: pd.DataFrame, attrs_sel:pd.Series | Iterabl
         
         # multiple combos of comid/attrs exist. Find them and warn about it.
         vec_missing = df_attr.groupby('featureID')['attribute'].count() != len(attrs_sel)
-        bad_comids = vec_missing.index.values
+        bad_comids = vec_missing.index.values[vec_missing]
         
+        warnings.warn(f"    TOTAL unique locations with missing attributes: {len(bad_comids)}",UserWarning)
         df_attr_sub_missing = df_attr[df_attr['featureID'].isin(bad_comids)]
-
+    
         missing_attrs = attrs_sel[~attrs_sel.isin(df_attr_sub_missing['attribute'])]
+        warnings.warn(f"    TOTAL MISSING ATTRS: {len(missing_attrs)}",UserWarning)
+        str_missing = '\n    '.join(missing_attrs.values)
 
-        warn_msg_missing_attrs = f"Not all featureID groupings (i.e. COMID groups) contain \
-        the same number of catchment attributes. \
+        warn_msg_missing_attrs = "\
+        \n Not all featureID groupings (i.e. COMID groups) contain the same number of catchment attributes. \
         \n This could be problematic for model training. \
-        \n Consider running attribute grabber with fsds.attr.hydfab. \
-        \n Missing attributes include: {', '.join(missing_attrs)}"
-
-        warnings.warn(warn_msg_missing_attrs,UserWarning)
+        \n Consider running attribute grabber with fsds.attr.hydfab."
+        warn_msg2 = "\nMissing attributes include: \n    " + str_missing
+        warn_msg_3 = "\n COMIDs with missing attributes include: \n" + ', '.join(bad_comids)
+        warnings.warn(warn_msg_missing_attrs + warn_msg2 + warn_msg_3,UserWarning)
+        
     
     return {'df_attr': df_attr, 'attrs_sel': attrs_sel}
 

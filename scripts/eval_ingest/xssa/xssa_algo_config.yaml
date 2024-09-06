@@ -6,11 +6,11 @@ algorithms: # REQUIRED. Refer to AlgoTrainEval.train_algos to see what options a
     - hidden_layer_sizes: (4,) # expect a tuple for hidden_layer_sizes, which will be interpreted as a string literal
     - activation: relu
     - solver: lbfgs
-    - alpha: 0.001
+    - alpha: [0.0001,0.001,0.01,0.1]
     - batch_size: auto
     - learning_rate: constant
     - power_t: 0.5
-    - max_iter: 20000
+    - max_iter: [20000,80000,160000]
 test_size: 0.3 # The proportion of dataset for testing, passed to sklearn.train_test_split
 seed: 32 # the random seed
 name_attr_config: 'xssa_attr_config.yaml'  # REQUIRED. Name of the corresponding dataset's attribute configuration file, which should be in the same directory as this. If not provided, assumes 'attr' may be substituted for this filename's 'algo'

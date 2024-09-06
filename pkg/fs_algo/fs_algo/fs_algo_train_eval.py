@@ -497,12 +497,22 @@ class AlgoTrainEval:
                 d[key] = [value]
         return(d)
 
+    def list_to_dict(self, config_ls):
+        # When a config object is inconveniently formatted as a list of multiple dict
+        if isinstance(config_ls,list):
+            config_dict = {}
+            for d in config_ls:
+                config_dict.update(d)
+        else:
+            config_dict = config_ls
+        return config_dict
+    
     def select_algs_grid_search(self):
         """Determines which algorithms' params involve hyperparameter tuning
         """
         ls_move_to_srch_cfig = list()
-        for k, alg_dict in self.algo_config.items():
-            sub_dict = {k: alg_dict[k] for k in alg_dict.keys()}
+        for k, alg_ls in self.algo_config.items():
+            sub_dict = {k: alg_dict[k] for alg_dict in alg_ls for k in alg_dict.keys()}
             totl_opts_per_param = list()
             for kk, v in sub_dict.items():
                 if isinstance(v,Iterable) and len(v)>1:
@@ -518,9 +528,23 @@ class AlgoTrainEval:
         # Move hyperparams from basic algo params into grid search params
         for k in ls_move_to_srch_cfig:
             self.algo_config_grid[k] = self.algo_config.pop(k)
+        
+        # Convert lists inside algo_config_grid['algo_name_here'] to a dict:
+        dict_acg = {}
+        for key, val in self.algo_config_grid.items():
+            dict_acg[key] = self.list_to_dict(val)
+        self.algo_config_grid = dict_acg
+
+        # Convert lists inside algo_config['algo_name_here'] to a dict:    
+        dict_ac = {}
+        for key, val in self.algo_config.items():
+            dict_ac[key] = self.list_to_dict(val)
+        self.algo_config = dict_ac
 
         if self.algo_config_grid: # If there are non iterable values, convert them to lists to aid the algo training
+            # e.g. {'activation':'relu'} becomes {'activation':['relu']}
             self.algo_config_grid  = self.convert_to_list(self.algo_config_grid)
+
     def train_algos(self):
         """Train algorithms based on what has been defined in the algo config file Algorithm options include the following:
         
@@ -531,6 +555,7 @@ class AlgoTrainEval:
         if 'rf' in self.algo_config:  # RANDOM FOREST
             if self.verbose:
                 print(f"      Performing Random Forest Training")
+            
             rf = RandomForestRegressor(n_estimators=self.algo_config['rf'].get('n_estimators'),
                                        oob_score=True,
                                        random_state=self.rs,
@@ -564,7 +589,7 @@ class AlgoTrainEval:
                                      'type': 'multi-layer perceptron regressor',
                                      'metric': self.metric}
 
-
+   
     def train_algos_grid_search(self):
         """Train algorithms using GridSearchCV based on the algo config file.
         
@@ -573,6 +598,7 @@ class AlgoTrainEval:
             - `rf` for :class:`sklearn.ensemble.RandomForestRegressor`
             - `mlp` for :class:`sklearn.neural_network.MLPRegressor`
         """
+
         if 'rf' in self.algo_config_grid:  # RANDOM FOREST
             if self.verbose:
                 print(f"      Performing Random Forest Training with Grid Search")

@@ -22,15 +22,15 @@ if __name__ == "__main__":
 
     with open(path_algo_config, 'r') as file:
         algo_cfg = yaml.safe_load(file)
-
-    algo_config = {k: algo_cfg['algorithms'][k][0] for k in algo_cfg['algorithms']}
-    if algo_config['mlp']['hidden_layer_sizes']: # purpose: evaluate string literal to a tuple
-        algo_config['mlp']['hidden_layer_sizes'] = ast.literal_eval(algo_config['mlp']['hidden_layer_sizes'])
     
+    # Ensure the string literal is converted to a tuple for `hidden_layer_sizes`
+    algo_config = {k: algo_cfg['algorithms'][k] for k in algo_cfg['algorithms']}
+    if algo_config['mlp'][0].get('hidden_layer_sizes',None): # purpose: evaluate string literal to a tuple
+        algo_config['mlp'][0]['hidden_layer_sizes'] = ast.literal_eval(algo_config['mlp'][0]['hidden_layer_sizes'])
+        
     verbose = algo_cfg['verbose']
     test_size = algo_cfg['test_size']
     seed = algo_cfg['seed']
-
 
     #%% Attribute configuration
     name_attr_config = algo_cfg.get('name_attr_config', Path(path_algo_config).name.replace('algo','attr')) 

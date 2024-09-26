@@ -6,7 +6,7 @@
 **Description**:  
 The formulation-selection decision support tool (FSDS) is under development.
 
-As NOAA OWP builds the model-agnostic NextGen framework, the hydrologic modeling community will need to know how to optimally select model formulations and estimate parameter values across ungauged catchments. This problem becomes intractable when considering the unique combinations of current and future model formulations combined with the innumerable possible parameter combinations across the continent. To simplify the model selection problem, we apply an analytical tool that predicts hydrologic formulation performance (Bolotin et al., 2022, Liu et al., 2022) using community-generated data. The formulation selection decision support (FSDS) tool readily predicts how models might perform across catchments based on catchment attributes. This decision support tool is designed such that as the hydrologic modeling community generates more results, better decisions can be made on where formulations would be best suited. Here we present the baseline results on formulation selection and demonstrate how the hydrologic modeling community may participate in improving and/or using this tool.
+As NOAA OWP builds the model-agnostic NextGen framework, the hydrologic modeling community will need to know how to optimally select model formulations and estimate parameter values across ungauged catchments. This problem becomes intractable when considering the unique combinations of current and future model formulations combined with the innumerable possible parameter combinations across the continent. To simplify the model selection problem, we apply an analytical tool that predicts hydrologic formulation performance (Bolotin et al., 2022, Liu et al., 2022) using community-generated data. The formulation selection decision support (FSDS) tool readily predicts how models might perform across catchments based on catchment attributes. This decision support tool is designed such that as the hydrologic modeling community generates more results, better decisions can be made on where formulations would be best suited.
 
 Other things to include:
 
@@ -25,11 +25,18 @@ Describe any dependencies that must be installed for this software to work.
 This includes programming languages, databases or other storage mechanisms, build tools, frameworks, and so forth.
 If specific versions of other software are required, or known not to work, call that out.
 
-## Installation - proc_fsds python package
+- [NOAA-OWP/hydrofabric](https://github.com/NOAA-OWP/hydrofabric)
+  - Note that the arrow package needs `arrow::arrow_with_s3() == TRUE`. If `FALSE`, consider downloading arrow via [apache's r-universe](https://apache.r-universe.dev/arrow)
+  - Steps to install hydrofabric: Refer to wiki
+- [USGS nhdplusTools](https://github.com/doi-usgs/nhdplusTools/)
+- [pynhd](https://github.com/hyriver/pynhd)
+
+
+## Installation - fsds_proc python package
 
 ### TLDR
- - Install `proc_fsds` package
-   `pip install /path/to/pkg/proc_fsds/proc_fsds/.`
+ - Install `fsds_proc` package
+   `pip install /path/to/pkg/fsds_proc/fsds_proc/.`
  - Build a yaml config file `/sripts/eval_metrics/name_of_dataset_here/name_of_dataset_schema.yaml` (refer to this template)[https://github.com/glitt13/fsds/blob/std_catg/scripts/eval_ingest/xssa/xssa_schema.yaml)
  - Create a script that reads in the data and runs the standardization processing. [Example script here](https://github.com/glitt13/fsds/blob/std_catg/scripts/eval_ingest/xssa/proc_xssa_metrics.py)
  - Then run the following:
@@ -40,7 +47,7 @@ If specific versions of other software are required, or known not to work, call 
 
 ### 1. Install the `fsds_proc` package, which standardizes raw input data into a common format.
 ```
-> cd /path/to/pkg/proc_fsds/proc_fsds
+> cd /path/to/pkg/fsds_proc/fsds_proc
 > pip install .
 ```
 

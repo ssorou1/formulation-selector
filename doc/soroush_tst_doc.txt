@@ -1,0 +1,3 @@
+git checkout -b name_of_your_new_branch
+git remote add upstream https://github.com/NOAA-OWP/formulation-selector.git
+

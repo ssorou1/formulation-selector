@@ -19,6 +19,7 @@ import joblib
 import itertools
 import yaml
 import warnings
+import forestci as fci
 
 # %% BASIN ATTRIBUTES (PREDICTORS) & RESPONSE VARIABLES (e.g. METRICS)
 class AttrConfigAndVars:
@@ -564,6 +565,18 @@ class AlgoTrainEval:
                                        oob_score=True,
                                        random_state=self.rs,
                                        )
+            # --- Inserting forestci for uncertainty calculation ---
+            ci = fci.random_forest_error(
+                forest=rf,
+                X_train_shape=self.X_train.shape,
+                X_test=self.X_test,  # Assuming X contains test samples
+                inbag=None, 
+                calibrate=True, 
+                memory_constrained=False, 
+                memory_limit=None, 
+                y_output=0  # Change this if multi-output
+            )
+            # ci now contains the confidence intervals for each prediction
             pipe_rf = make_pipeline(rf)                           
             pipe_rf.fit(self.X_train, self.y_train)
             self.algs_dict['rf'] = {'algo': rf,

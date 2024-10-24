@@ -565,6 +565,12 @@ class AlgoTrainEval:
                                        oob_score=True,
                                        random_state=self.rs,
                                        )
+            pipe_rf = make_pipeline(rf)                           
+            pipe_rf.fit(self.X_train, self.y_train)
+            
+            # --- Make predictions using the RandomForest model ---
+            y_pred_rf = rf.predict(self.X_test)
+
             # --- Inserting forestci for uncertainty calculation ---
             ci = fci.random_forest_error(
                 forest=rf,
@@ -577,8 +583,10 @@ class AlgoTrainEval:
                 y_output=0  # Change this if multi-output
             )
             # ci now contains the confidence intervals for each prediction
-            pipe_rf = make_pipeline(rf)                           
-            pipe_rf.fit(self.X_train, self.y_train)
+            
+            # --- Compare predictions with confidence intervals ---
+            print("Predictions using RandomForest model:", y_pred_rf)
+            print("Confidence intervals (ci) for predictions:", ci)
             self.algs_dict['rf'] = {'algo': rf,
                                     'pipeline': pipe_rf,
                                     'type': 'random forest regressor',

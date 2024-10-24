@@ -143,7 +143,7 @@ Attributes from non-standardized datasets may need to be acquired for RaFTS mode
 Run [`flow.install.proc.attr.hydfab.R`](https://github.com/NOAA-OWP/formulation-selector/blob/main/pkg/proc.attr.hydfab/flow/flow.install.proc.attr.hydfab.R) to install the package. Note that a user may need to modify the section that creates the `fs_dir` for their custom path to this repo's directory.
 
 ## Usage - `proc.attr.hydfab`
-The following is an example script that runs the attribute grabber: [`fs_attrs_grab`](https://github.com/NOAA-OWP/formulation-selector/blob/main/pkg/proc.attr.hydfab/flow/fsds_attrs_grab.R).
+The following is an example script that runs the attribute grabber: [`fs_attrs_grab`](https://github.com/NOAA-OWP/formulation-selector/blob/main/pkg/proc.attr.hydfab/flow/fs_attrs_grab.R).
 
 This script grabs attribute data corresponding to locations of interest, and saves those attribute data inside a directory as multiple parquet files. The `proc.attr.hydfab::retrieve_attr_exst()` function may then efficiently query and then retrieve desired data by variable name and comid from those parquet files.
 

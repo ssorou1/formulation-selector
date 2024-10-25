@@ -719,8 +719,19 @@ class AlgoTrainEval:
             path_algo = std_algo_path(self.dir_out_alg_ds, algo, self.metric, self.dataset_id)
             # basename_alg_ds_metr = f'algo_{algo}_{self.metric}__{self.dataset_id}'
             # path_algo = Path(self.dir_out_alg_ds) / Path(basename_alg_ds_metr + '.joblib')
+            
             # write trained algorithm
-            joblib.dump(self.algs_dict[algo]['pipeline'], path_algo)
+            # joblib.dump(self.algs_dict[algo]['pipeline'], path_algo)
+            
+            # --- Modified part: Combine rf model and ci into a single dictionary ---
+            pipeline_with_ci = {
+            'model': self.algs_dict[algo]['pipeline'],   # The trained model (Random Forest or other algorithm)
+            'confidence_intervals': self.algs_dict[algo].get('ci')  # The ci object if it exists
+            }
+            
+            # Save the combined pipeline (model + ci) using joblib
+            joblib.dump(pipeline_with_ci, path_algo)
+            
             self.algs_dict[algo]['loc_pipe'] = str(path_algo)
    
     def org_metadata_alg(self):

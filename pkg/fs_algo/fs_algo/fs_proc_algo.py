@@ -104,7 +104,13 @@ if __name__ == "__main__":
                                         metr=metr,test_size=test_size, rs = seed,
                                         verbose=verbose)
             
-            X_train, X_test, y_train, y_test = train_eval.split_train_test()  # Split data for training
+            
+            train_eval.split_data()  # Split the data
+            X_train = train_eval.X_train
+            X_test = train_eval.X_test
+            y_train = train_eval.y_train
+            y_test = train_eval.y_test
+
             # Save the training data X_train for later use in prediction CIs
             joblib.dump(X_train, Path(dir_out_alg_ds) / 'X_train.joblib')
             

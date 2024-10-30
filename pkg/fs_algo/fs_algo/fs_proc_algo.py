@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 import fs_algo.fs_algo_train_eval as fsate
 import ast
+import joblib
 
 """Workflow script to train algorithms on catchment attribute data for predicting
     formulation metrics and/or hydrologic signatures.
@@ -102,6 +103,11 @@ if __name__ == "__main__":
                                         dir_out_alg_ds=dir_out_alg_ds, dataset_id=ds,
                                         metr=metr,test_size=test_size, rs = seed,
                                         verbose=verbose)
+            
+            X_train, X_test, y_train, y_test = train_eval.split_train_test()  # Split data for training
+            # Save the training data X_train for later use in prediction CIs
+            joblib.dump(X_train, Path(dir_out_alg_ds) / 'X_train.joblib')
+            
             train_eval.train_eval() # Train, test, eval wrapper
             
             # Retrieve evaluation metrics dataframe

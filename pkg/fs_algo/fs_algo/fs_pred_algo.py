@@ -8,6 +8,8 @@ import ast
 import warnings
 import os
 import numpy as np
+import forestci as fci
+from sklearn.model_selection import train_test_split
 
 # TODO create a function that's flexible/converts user formatted checks (a la fs_proc)
 
@@ -75,10 +77,21 @@ if __name__ == "__main__":
 
                 # Perform prediction
                 resp_pred = pipe.predict(df_attr_sub)
+                
+                # Calculate confidence intervals for the predictions using forestci
+                # Assuming we have access to X_train from training (needs to be retrieved accordingly)
+                # X_train should come from the training script or be saved with the pipeline
+                # We'll assume `X_train` can be loaded or accessed
+                X_train = joblib.load(Path(dir_out_alg_ds, 'X_train.joblib'))  # Load saved training data
+                pred_var = fci.random_forest_error(pipe, X_train.values, df_attr_sub.values)
+                lower_ci, upper_ci = fci.calculate_confidence_intervals(resp_pred, pred_var)
+
 
                 # compile prediction results:
                 df_pred =pd.DataFrame({'comid':comids_pred,
                              'prediction':resp_pred,
+                             'lower_ci': lower_ci,
+                             'upper_ci': upper_ci,
                              'metric':metric,
                              'dataset':ds,
                              'algo':algo,

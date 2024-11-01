@@ -71,9 +71,39 @@ if __name__ == "__main__":
 
 
                 # Read in the algorithm's pipeline
+                print(f"Debug: This is path_algo {path_algo}")
                 pipe = joblib.load(path_algo)
-                feat_names = list(pipe.feature_names_in_)
+
+                # Print the type of 'pipe' and its keys
+                print(f"Debug: Type of pipe is {type(pipe)}")
+                print(f"Debug: pipe is a dictionary with keys: {pipe.keys()}")
+                
+                # Check if 'model' contains the 'feature_names_in_' attribute
+                model = pipe.get('model', None)
+                if model is not None:
+                    print(f"Debug: Type of 'model' is {type(model)}")
+                    print(f"Debug: Attributes of 'model': {dir(model)}")
+                    if hasattr(model, 'feature_names_in_'):
+                        feat_names = list(model.feature_names_in_)
+                        print(f"Feature names from 'model': {feat_names}")
+                    else:
+                        print(f"'model' does not have 'feature_names_in_'")
+                
+                # Check if 'confidence_intervals' contains the 'feature_names_in_' attribute
+                confidence_intervals = pipe.get('confidence_intervals', None)
+                if confidence_intervals is not None:
+                    print(f"Debug: Type of 'confidence_intervals' is {type(confidence_intervals)}")
+                    print(f"Debug: Attributes of 'confidence_intervals': {dir(confidence_intervals)}")
+                    if hasattr(confidence_intervals, 'feature_names_in_'):
+                        feat_names = list(confidence_intervals.feature_names_in_)
+                        print(f"Feature names from 'confidence_intervals': {feat_names}")
+                    else:
+                        print(f"'confidence_intervals' does not have 'feature_names_in_'")
+                feat_names = list(pipe['model'].feature_names_in_)
+                
+                # feat_names = list(pipe.feature_names_in_)
                 df_attr_sub = df_attr_wide[feat_names]
+                print(f" df_attr_sub: {df_attr_sub}")
 
                 # Perform prediction
                 resp_pred = pipe.predict(df_attr_sub)

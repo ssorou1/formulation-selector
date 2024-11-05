@@ -72,25 +72,25 @@ if __name__ == "__main__":
 
                 # Read in the algorithm's pipeline
                 print(f"Debug: This is path_algo {path_algo}")
-                pipe = joblib.load(path_algo)
+                pipeline_with_ci = joblib.load(path_algo)
 
-                # Print the type of 'pipe' and its keys
-                print(f"Debug: Type of pipe is {type(pipe)}")
-                print(f"Debug: pipe is a dictionary with keys: {pipe.keys()}")
+                # Print the type of 'pipeline_with_ci' and its keys
+                print(f"Debug: Type of pipeline_with_ci is {type(pipeline_with_ci)}")
+                print(f"Debug: pipeline_with_ci is a dictionary with keys: {pipeline_with_ci.keys()}")
                 
-                # Check if 'model' contains the 'feature_names_in_' attribute
-                model = pipe.get('model', None)
-                if model is not None:
-                    print(f"Debug: Type of 'model' is {type(model)}")
-                    print(f"Debug: Attributes of 'model': {dir(model)}")
-                    if hasattr(model, 'feature_names_in_'):
-                        feat_names = list(model.feature_names_in_)
-                        print(f"Feature names from 'model': {feat_names}")
+                # Check if 'pipe' contains the 'feature_names_in_' attribute
+                pipe = pipeline_with_ci.get('pipe', None)
+                if pipe is not None:
+                    print(f"Debug: Type of 'pipe' is {type(pipe)}")
+                    print(f"Debug: Attributes of 'pipe': {dir(pipe)}")
+                    if hasattr(pipe, 'feature_names_in_'):
+                        feat_names = list(pipe.feature_names_in_)
+                        print(f"Feature names from 'pipe': {feat_names}")
                     else:
-                        print(f"'model' does not have 'feature_names_in_'")
+                        print(f"'pipe' does not have 'feature_names_in_'")
                 
                 # Check if 'confidence_intervals' contains the 'feature_names_in_' attribute
-                confidence_intervals = pipe.get('confidence_intervals', None)
+                confidence_intervals = pipeline_with_ci.get('confidence_intervals', None)
                 if confidence_intervals is not None:
                     print(f"Debug: Type of 'confidence_intervals' is {type(confidence_intervals)}")
                     print(f"Debug: Attributes of 'confidence_intervals': {dir(confidence_intervals)}")
@@ -99,11 +99,13 @@ if __name__ == "__main__":
                         print(f"Feature names from 'confidence_intervals': {feat_names}")
                     else:
                         print(f"'confidence_intervals' does not have 'feature_names_in_'")
-                feat_names = list(pipe['model'].feature_names_in_)
+                # feat_names = list(pipeline_with_ci['pipe'].feature_names_in_)
                 
-                # feat_names = list(pipe.feature_names_in_)
+                pipe = pipeline_with_ci['pipe']  # Assign the actual pipeline (pipe) to 'pipe'
+                feat_names = list(pipe.feature_names_in_)
                 df_attr_sub = df_attr_wide[feat_names]
-                print(f" df_attr_sub: {df_attr_sub}")
+                # print(f" df_attr_sub: {df_attr_sub}")
+                type(pipe)
 
                 # Perform prediction
                 resp_pred = pipe.predict(df_attr_sub)

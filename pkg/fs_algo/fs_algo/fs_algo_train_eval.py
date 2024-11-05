@@ -725,7 +725,7 @@ class AlgoTrainEval:
             
             # --- Modified part: Combine rf model and ci into a single dictionary ---
             pipeline_with_ci = {
-            'model': self.algs_dict[algo]['pipeline'],   # The trained model (Random Forest or other algorithm)
+            'pipe': self.algs_dict[algo]['pipeline'],   # The trained model (Random Forest or other algorithm)
             'confidence_intervals': self.algs_dict[algo].get('ci')  # The ci object if it exists
             }
             

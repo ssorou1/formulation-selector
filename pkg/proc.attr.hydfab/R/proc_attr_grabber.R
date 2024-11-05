@@ -375,6 +375,10 @@ proc_attr_wrap <- function(comid, Retr_Params, lyrs='network',overwrite=FALSE,hf
   path_attrs <- base::file.path(Retr_Params$paths$dir_db_attrs,
                           base::paste0("comid_",comid,"_attrs.parquet"))
   vars_ls <- Retr_Params$vars
+  # ------- Retr_Params$vars format checker --------- #
+  # Run check on requested variables for retrieval:
+  proc.attr.hydfab:::wrap_check_vars(vars_ls)
+
   # ----------- existing dataset checker ----------- #
   ls_chck <- proc.attr.hydfab::proc_attr_exst_wrap(comid,path_attrs,
                                                    vars_ls,bucket_conn=NA)
@@ -513,8 +517,13 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
              revisit the configuration yaml file that processes this dataset in
             fs_proc: \n {featureSource}, and featureID={featureID}"))
     } else if (!is.null(site_feature)){
-      comid <- site_feature['comid']$comid
-      ls_site_feat[[gage_id]] <- site_feature
+      if(!base::is.na(site_feature['comid']$comid)){
+        comid <- site_feature['comid']$comid
+      } else {
+        message(glue::glue("Could not retrieve comid for {nldi_feat$featureID}."))
+        comid <- nhdplusTools::discover_nhdplus_id(point=site_feature$geometry)
+        message(glue::glue("Geospatial search found a comid value of: {comid}"))
+      }
       ls_comid[[gage_id]] <- comid
 
       # Retrieve the variables corresponding to datasets of interest & update database
@@ -522,6 +531,8 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
                                                     Retr_Params=Retr_Params,
                                                     lyrs=lyrs,overwrite=FALSE,
                                                     hfab_retr=hfab_retr))
+      loc_attrs$gage_id <- gage_id # Add the original identifier to dataset
+      ls_site_feat[[gage_id]] <- loc_attrs
       if("try-error" %in% class(loc_attrs)){
         message(glue::glue("Skipping gage_id {gage_id} corresponding to comid {comid}"))
       }
@@ -529,17 +540,16 @@ proc_attr_gageids <- function(gage_ids,featureSource,featureID,Retr_Params,
       message(glue::glue("Skipping {gage_id}"))
     }
   }
-  just_comids <- ls_comid %>% unname() %>% unlist()
+  just_comids <- ls_comid %>% base::unname() %>% base::unlist()
 
   if(any(is.na(just_comids))){
-    idxs_na_comids <- which(is.na(just_comids))
+    idxs_na_comids <- base::which(base::is.na(just_comids))
     gage_ids_missing <- paste0(names(ls_comid[idxs_na_comids]), collapse = ", ")
     warning(glue::glue("The following gage_id values did not return a comid:\n
                        {gage_ids_missing}"))
   }
 
-  dt_site_feat <- data.table::rbindlist(ls_site_feat)
-  dt_site_feat$gage_id <- gage_ids # Add the original identifier to dataset
+  dt_site_feat <- data.table::rbindlist(ls_site_feat,fill = TRUE)
   return(dt_site_feat)
 }
 
@@ -795,6 +805,48 @@ write_meta_nldi_feat <- function(dt_site_feat, path_meta){
   base::message(glue::glue("Wrote nldi location metadata to {path_meta}"))
 }
 
+wrap_check_vars <- function(vars_ls){
+  #' @title Internal wrapper to run checks on requested attribute variable names
+  #' @param vars_ls A named list from Retr_Params$vars in the standardized format
+  #' @description Given a list of variable categories, each containing vectors
+  #' of variable names, check the following:
+  #' 1) the variable category is a recognized category name (e.g. 'usgs_vars')
+  #' 2) the variable names inside the category name are actual variable names
+  #' that can be used to retrieve attributes (e.g. 'TOT_TWI' as an nhdplus attribute)
+
+  # Get the accepted variable categories used in proc.attr.hydfab R package
+  dir_pkg <- system.file("extdata",package="proc.attr.hydfab")
+  cfg_attr_src <- yaml::read_yaml(base::file.path(dir_pkg,"attr_source_types.yml"))
+  var_catgs <- base::lapply(cfg_attr_src,
+                            function(x) base::unlist(x)[['name']]) %>%
+    base::unlist() %>% base::unname()
+
+  # Now check what var categories provided by user in the the Retr_Params$vars
+  names_var_catg <- base::names(vars_ls)
+  if(base::any(base::is.null(names_var_catg))){
+    stop(glue::glue("Retr_Params$vars should be a sublist with sublist names ",
+                    "corresponding to\n standardized names in the proc.attr.hydfab package.",
+                    " These names include:\n{paste0(var_catgs,collapse='\n')}"))
+  }
+
+  # Run test that the variable name is inside
+  test_bool_var_catg <- base::lapply(names_var_catg,
+                                     function(x) x %in% var_catgs) %>% unlist()
+  if(base::any(!test_bool_var_catg)){
+    stop(glue::glue("Retr_Params$vars contains the following unrecognized ",
+                    "variable category name(s): ",
+                    "{paste0(names_var_catg[!test_bool_var_catg],collapse='\n')}",
+                    "\nAcceptable names include:\n",
+                    "{paste0(var_catgs,collapse='\n')}"
+    ))
+  }
+
+  # ------------------ RUN CHECK ON INDIVIDUAL VARIABLE NAMES -------------- #
+  for(var_group_name in names(vars_ls)){
+    sub_vars <- vars_ls[[var_group_name]]
+    proc.attr.hydfab::check_attr_selection(vars=sub_vars)
+  }
+}
 
 check_attr_selection <- function(attr_cfg_path = NULL, vars = NULL, verbose = TRUE){
   #' @title Check that attributes selected by user are available

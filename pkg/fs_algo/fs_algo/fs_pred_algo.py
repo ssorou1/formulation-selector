@@ -17,12 +17,14 @@ from sklearn.model_selection import train_test_split
 # Predict values and evaluate predictions
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'process the prediction config file')
-    parser.add_argument('path_pred_config', type=str, help='Path to the YAML configuration file specific for prediction.')
+    # parser.add_argument('path_pred_config', type=str, help='Path to the YAML configuration file specific for prediction.')
+    parser.add_argument('path_pred_config', type=str, nargs='?', default='C:/Users/Soroush.Sorourian/git/formulation-selector/scripts/eval_ingest/xssa/xssa_pred_config.yaml', help='Path to the YAML configuration file specific for prediction.')
     # NOTE pred_config should contain the path for path_algo_config
     args = parser.parse_args()
 
     home_dir = Path.home()
-    path_pred_config = Path(args.path_pred_config) #Path(f'{home_dir}/git/formulation-selector/scripts/eval_ingest/xssa/xssa_pred_config.yaml') 
+    # path_pred_config = Path(args.path_pred_config) #Path(f'{home_dir}/git/formulation-selector/scripts/eval_ingest/xssa/xssa_pred_config.yaml') 
+    path_pred_config = Path(f'C:/Users/Soroush.Sorourian/git/formulation-selector/scripts/eval_ingest/xssa/xssa_pred_config.yaml') 
     with open(path_pred_config, 'r') as file:
         pred_cfg = yaml.safe_load(file)
 

@@ -590,7 +590,8 @@ class AlgoTrainEval:
             self.algs_dict['rf'] = {'algo': rf,
                                     'pipeline': pipe_rf,
                                     'type': 'random forest regressor',
-                                    'metric': self.metric}
+                                    'metric': self.metric,
+                                    'ci': ci}
 
         if 'mlp' in self.algo_config:  # MULTI-LAYER PERCEPTRON
             
@@ -726,8 +727,10 @@ class AlgoTrainEval:
             # --- Modified part: Combine rf model and ci into a single dictionary ---
             pipeline_with_ci = {
             'pipe': self.algs_dict[algo]['pipeline'],   # The trained model (Random Forest or other algorithm)
-            'confidence_intervals': self.algs_dict[algo].get('ci')  # The ci object if it exists
+            'confidence_intervals': self.algs_dict[algo].get('ci',None)  # The ci object if it exists
             }
+            
+            print(self.algs_dict[algo].get('ci'))
             
             # Save the combined pipeline (model + ci) using joblib
             joblib.dump(pipeline_with_ci, path_algo)

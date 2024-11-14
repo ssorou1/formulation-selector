@@ -585,8 +585,6 @@ class AlgoTrainEval:
             # ci now contains the confidence intervals for each prediction
             
             # --- Compare predictions with confidence intervals ---
-            print("Predictions using RandomForest model:", y_pred_rf)
-            print("Confidence intervals (ci) for predictions:", ci)
             self.algs_dict['rf'] = {'algo': rf,
                                     'pipeline': pipe_rf,
                                     'type': 'random forest regressor',
@@ -730,7 +728,7 @@ class AlgoTrainEval:
             'confidence_intervals': self.algs_dict[algo].get('ci',None)  # The ci object if it exists
             }
             
-            print(self.algs_dict[algo].get('ci'))
+            # print(self.algs_dict[algo].get('ci'))
             
             # Save the combined pipeline (model + ci) using joblib
             joblib.dump(pipeline_with_ci, path_algo)

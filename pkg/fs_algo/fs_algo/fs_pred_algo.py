@@ -104,10 +104,10 @@ if __name__ == "__main__":
                 # feat_names = list(pipeline_with_ci['pipe'].feature_names_in_)
                 
                 pipe = pipeline_with_ci['pipe']  # Assign the actual pipeline (pipe) to 'pipe'
+                rf_model = pipe.named_steps['randomforestregressor']  # Use the correct step name
                 feat_names = list(pipe.feature_names_in_)
                 df_attr_sub = df_attr_wide[feat_names]
                 # print(f" df_attr_sub: {df_attr_sub}")
-                type(pipe)
 
                 # Perform prediction
                 resp_pred = pipe.predict(df_attr_sub)
@@ -117,15 +117,25 @@ if __name__ == "__main__":
                 # X_train should come from the training script or be saved with the pipeline
                 # We'll assume `X_train` can be loaded or accessed
                 X_train = joblib.load(Path(dir_out_alg_ds, 'X_train.joblib'))  # Load saved training data
-                pred_var = fci.random_forest_error(pipe, X_train.values, df_attr_sub.values)
-                lower_ci, upper_ci = fci.calculate_confidence_intervals(resp_pred, pred_var)
-
+                # Ensure X_train is a NumPy array or DataFrame
+                if isinstance(X_train, pd.DataFrame):
+                    X_train = X_train.values
+                elif isinstance(X_train, list):
+                    X_train = np.array(X_train)
+                
+                # Check shape of X_train
+                print("X_train shape:", X_train.shape)
+                
+                # Ensure the shape is correct
+                if len(X_train.shape) == 1:
+                    X_train = X_train.reshape(-1, 1)
+                    
+                pred_ci = fci.random_forest_error(forest=rf_model, X_train_shape=X_train.shape, X_test=df_attr_sub.to_numpy())
 
                 # compile prediction results:
                 df_pred =pd.DataFrame({'comid':comids_pred,
                              'prediction':resp_pred,
-                             'lower_ci': lower_ci,
-                             'upper_ci': upper_ci,
+                             'ci': pred_ci,
                              'metric':metric,
                              'dataset':ds,
                              'algo':algo,

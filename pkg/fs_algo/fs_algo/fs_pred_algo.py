@@ -72,63 +72,29 @@ if __name__ == "__main__":
                     raise FileNotFoundError(f"The following algorithm path does not exist: \n{path_algo}")
 
 
-                # Read in the algorithm's pipeline
-                print(f"Debug: This is path_algo {path_algo}")
                 pipeline_with_ci = joblib.load(path_algo)
-
-                # Print the type of 'pipeline_with_ci' and its keys
-                print(f"Debug: Type of pipeline_with_ci is {type(pipeline_with_ci)}")
-                print(f"Debug: pipeline_with_ci is a dictionary with keys: {pipeline_with_ci.keys()}")
-                
-                # Check if 'pipe' contains the 'feature_names_in_' attribute
-                pipe = pipeline_with_ci.get('pipe', None)
-                if pipe is not None:
-                    print(f"Debug: Type of 'pipe' is {type(pipe)}")
-                    print(f"Debug: Attributes of 'pipe': {dir(pipe)}")
-                    if hasattr(pipe, 'feature_names_in_'):
-                        feat_names = list(pipe.feature_names_in_)
-                        print(f"Feature names from 'pipe': {feat_names}")
-                    else:
-                        print(f"'pipe' does not have 'feature_names_in_'")
-                
-                # Check if 'confidence_intervals' contains the 'feature_names_in_' attribute
-                confidence_intervals = pipeline_with_ci.get('confidence_intervals', None)
-                if confidence_intervals is not None:
-                    print(f"Debug: Type of 'confidence_intervals' is {type(confidence_intervals)}")
-                    print(f"Debug: Attributes of 'confidence_intervals': {dir(confidence_intervals)}")
-                    if hasattr(confidence_intervals, 'feature_names_in_'):
-                        feat_names = list(confidence_intervals.feature_names_in_)
-                        print(f"Feature names from 'confidence_intervals': {feat_names}")
-                    else:
-                        print(f"'confidence_intervals' does not have 'feature_names_in_'")
-                # feat_names = list(pipeline_with_ci['pipe'].feature_names_in_)
+                # pipe = pipeline_with_ci.get('pipe', None)
                 
                 pipe = pipeline_with_ci['pipe']  # Assign the actual pipeline (pipe) to 'pipe'
                 rf_model = pipe.named_steps['randomforestregressor']  # Use the correct step name
                 feat_names = list(pipe.feature_names_in_)
                 df_attr_sub = df_attr_wide[feat_names]
-                # print(f" df_attr_sub: {df_attr_sub}")
 
                 # Perform prediction
                 resp_pred = pipe.predict(df_attr_sub)
                 
                 # Calculate confidence intervals for the predictions using forestci
-                # Assuming we have access to X_train from training (needs to be retrieved accordingly)
-                # X_train should come from the training script or be saved with the pipeline
-                # We'll assume `X_train` can be loaded or accessed
                 X_train = joblib.load(Path(dir_out_alg_ds, 'X_train.joblib'))  # Load saved training data
                 # Ensure X_train is a NumPy array or DataFrame
-                if isinstance(X_train, pd.DataFrame):
-                    X_train = X_train.values
-                elif isinstance(X_train, list):
-                    X_train = np.array(X_train)
+                # if isinstance(X_train, pd.DataFrame):
+                #     X_train = X_train.values
+                # elif isinstance(X_train, list):
+                #     X_train = np.array(X_train)
                 
-                # Check shape of X_train
-                print("X_train shape:", X_train.shape)
                 
                 # Ensure the shape is correct
-                if len(X_train.shape) == 1:
-                    X_train = X_train.reshape(-1, 1)
+                # if len(X_train.shape) == 1:
+                #     X_train = X_train.reshape(-1, 1)
                     
                 pred_ci = fci.random_forest_error(forest=rf_model, X_train_shape=X_train.shape, X_test=df_attr_sub.to_numpy())
 

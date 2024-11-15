@@ -110,7 +110,10 @@ if __name__ == "__main__":
             train_eval.train_eval() # Train, test, eval wrapper
             X_train = train_eval.X_train
             # Save the training data X_train for later use in prediction CIs
-            joblib.dump(X_train, Path(dir_out_alg_ds) / 'X_train.joblib')
+            # joblib.dump(X_train, Path(dir_out_alg_ds) / 'X_train.joblib')
+            X_train_df = pd.DataFrame(X_train)
+            # Save X_train as a CSV file
+            X_train_df.to_csv(Path(dir_out_alg_ds) / 'X_train.csv', index=False)
             
             # Retrieve evaluation metrics dataframe
             rslt_eval[metr] = train_eval.eval_df

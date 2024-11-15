@@ -84,7 +84,8 @@ if __name__ == "__main__":
                 resp_pred = pipe.predict(df_attr_sub)
                 
                 # Calculate confidence intervals for the predictions using forestci
-                X_train = joblib.load(Path(dir_out_alg_ds, 'X_train.joblib'))  # Load saved training data                    
+                # X_train = joblib.load(Path(dir_out_alg_ds, 'X_train.joblib'))  # Load saved training data
+                X_train = pd.read_csv(Path(dir_out_alg_ds) / 'X_train.csv')                    
                 pred_ci = fci.random_forest_error(forest=rf_model, X_train_shape=X_train.shape, X_test=df_attr_sub.to_numpy())
 
                 # compile prediction results:

@@ -380,6 +380,22 @@ def std_pred_path(dir_out: str | os.PathLike, algo: str, metric: str, dataset_id
     path_pred_rslt = Path(dir_preds_ds)/Path(basename_pred_alg_ds_metr)
     return path_pred_rslt
 
+def std_Xtrain_path(dir_out_alg_ds:str | os.PathLike, algo: str, dataset_id: str) -> str:
+    """Standardize the algorithm save path
+    :param dir_out_alg_ds:  Directory where algorithm's output stored.
+    :type dir_out_alg_ds: str | os.PathLike
+    :param algo: The type of algorithm
+    :type algo: str
+    :param metric:  The metric or hydrologic signature identifier of interest
+    :type metric: str
+    :return: full save path for joblib object
+    :rtype: str
+    """
+    Path(dir_out_alg_ds).mkdir(exist_ok=True,parents=True)
+    basename_alg_ds = f'Xtrain_{algo}__{dataset_id}'
+    path_Xtrain = Path(dir_out_alg_ds) / Path(basename_alg_ds + '.csv')
+    return path_Xtrain
+
 def _read_pred_comid(path_pred_locs: str | os.PathLike, comid_pred_col:str ) -> list[str]:
     """Read the comids from a prediction file formatted as .csv
 

@@ -564,6 +564,30 @@ class AlgoTrainEval:
             # e.g. {'activation':'relu'} becomes {'activation':['relu']}
             self.algo_config_grid  = self.convert_to_list(self.algo_config_grid)
 
+    def calculate_rf_uncertainty(self, forest, X_train, X_test):
+        """
+        Calculate uncertainty using forestci for a Random Forest model.
+
+        Parameters:
+            forest (RandomForestRegressor): Trained Random Forest model.
+            X_train (ndarray): Training data.
+            X_test (ndarray): Test data.
+
+        Returns:
+            ndarray: Confidence intervals for each prediction.
+        """
+        ci = fci.random_forest_error(
+            forest=forest,
+            X_train_shape=X_train.shape,
+            X_test=X_test,
+            inbag=None, 
+            calibrate=True, 
+            memory_constrained=False, 
+            memory_limit=None, 
+            y_output=0  # Change this if multi-output
+        )
+        return ci
+
     def train_algos(self):
         """Train algorithms based on what has been defined in the algo config file Algorithm options include the following:
         
@@ -585,19 +609,22 @@ class AlgoTrainEval:
             # --- Make predictions using the RandomForest model ---
             y_pred_rf = rf.predict(self.X_test)
 
-            # --- Inserting forestci for uncertainty calculation ---
-            ci = fci.random_forest_error(
-                forest=rf,
-                X_train_shape=self.X_train.shape,
-                X_test=self.X_test,  # Assuming X contains test samples
-                inbag=None, 
-                calibrate=True, 
-                memory_constrained=False, 
-                memory_limit=None, 
-                y_output=0  # Change this if multi-output
-            )
-            # ci now contains the confidence intervals for each prediction
+            # # --- Inserting forestci for uncertainty calculation ---
+            # ci = fci.random_forest_error(
+            #     forest=rf,
+            #     X_train_shape=self.X_train.shape,
+            #     X_test=self.X_test,  # Assuming X contains test samples
+            #     inbag=None, 
+            #     calibrate=True, 
+            #     memory_constrained=False, 
+            #     memory_limit=None, 
+            #     y_output=0  # Change this if multi-output
+            # )
+            # # ci now contains the confidence intervals for each prediction
             
+            # --- Calculate confidence intervals ---
+            ci = self.calculate_rf_uncertainty(rf, self.X_train, self.X_test)
+
             # --- Compare predictions with confidence intervals ---
             self.algs_dict['rf'] = {'algo': rf,
                                     'pipeline': pipe_rf,

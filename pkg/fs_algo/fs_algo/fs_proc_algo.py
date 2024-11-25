@@ -113,7 +113,9 @@ if __name__ == "__main__":
             # joblib.dump(X_train, Path(dir_out_alg_ds) / 'X_train.joblib')
             X_train_df = pd.DataFrame(X_train)
             # Save X_train as a CSV file
-            X_train_df.to_csv(Path(dir_out_alg_ds) / 'X_train.csv', index=False)
+            # X_train_df.to_csv(Path(dir_out_alg_ds) / 'X_train.csv', index=False)
+            path_Xtrain = fsate.std_Xtrain_path(dir_out_alg_ds,  dataset_id=ds)
+            X_train_df.to_csv(path_Xtrain, index=False)            
             
             # Retrieve evaluation metrics dataframe
             rslt_eval[metr] = train_eval.eval_df
@@ -126,4 +128,4 @@ if __name__ == "__main__":
         print(f'... Wrote training and testing evaluation to file for {ds}')
 
         dat_resp.close()
-    print("FINISHED algorithm training, testing, & evaluation")
+        print("FINISHED algorithm training, testing, & evaluation")

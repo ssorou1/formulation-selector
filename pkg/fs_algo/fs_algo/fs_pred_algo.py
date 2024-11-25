@@ -85,7 +85,9 @@ if __name__ == "__main__":
                 
                 # Calculate confidence intervals for the predictions using forestci
                 # X_train = joblib.load(Path(dir_out_alg_ds, 'X_train.joblib'))  # Load saved training data
-                X_train = pd.read_csv(Path(dir_out_alg_ds) / 'X_train.csv')                    
+                # X_train = pd.read_csv(Path(dir_out_alg_ds) / 'X_train.csv') 
+                path_Xtrain = fsate.std_Xtrain_path(dir_out_alg_ds,  dataset_id=ds) 
+                X_train = pd.read_csv(path_Xtrain)                  
                 pred_ci = fci.random_forest_error(forest=rf_model, X_train_shape=X_train.shape, X_test=df_attr_sub.to_numpy())
 
                 # compile prediction results:

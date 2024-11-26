@@ -8,6 +8,8 @@ import ast
 import warnings
 import os
 import numpy as np
+import forestci as fci
+from sklearn.model_selection import train_test_split
 
 # TODO create a function that's flexible/converts user formatted checks (a la fs_proc)
 
@@ -16,11 +18,13 @@ import numpy as np
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'process the prediction config file')
     parser.add_argument('path_pred_config', type=str, help='Path to the YAML configuration file specific for prediction.')
+    # parser.add_argument('path_pred_config', type=str, nargs='?', default='C:/Users/Soroush.Sorourian/git/formulation-selector/scripts/eval_ingest/xssa/xssa_pred_config.yaml', help='Path to the YAML configuration file specific for prediction.')
     # NOTE pred_config should contain the path for path_algo_config
     args = parser.parse_args()
 
     home_dir = Path.home()
-    path_pred_config = Path(args.path_pred_config) #Path(f'{home_dir}/git/formulation-selector/scripts/eval_ingest/xssa/xssa_pred_config.yaml') 
+    # path_pred_config = Path(args.path_pred_config) #Path(f'{home_dir}/git/formulation-selector/scripts/eval_ingest/xssa/xssa_pred_config.yaml') 
+    path_pred_config = Path(f'C:/Users/Soroush.Sorourian/git/formulation-selector/scripts/eval_ingest/xssa/xssa_pred_config.yaml') 
     with open(path_pred_config, 'r') as file:
         pred_cfg = yaml.safe_load(file)
 
@@ -68,17 +72,26 @@ if __name__ == "__main__":
                     raise FileNotFoundError(f"The following algorithm path does not exist: \n{path_algo}")
 
 
-                # Read in the algorithm's pipeline
-                pipe = joblib.load(path_algo)
+                pipeline_with_ci = joblib.load(path_algo)
+                # pipe = pipeline_with_ci.get('pipe', None)
+                
+                pipe = pipeline_with_ci['pipe']  # Assign the actual pipeline (pipe) to 'pipe'
+                rf_model = pipe.named_steps['randomforestregressor']  # Use the correct step name
                 feat_names = list(pipe.feature_names_in_)
                 df_attr_sub = df_attr_wide[feat_names]
 
                 # Perform prediction
                 resp_pred = pipe.predict(df_attr_sub)
+                
+                # Calculate confidence intervals for the predictions using forestci
+                path_Xtrain = fsate.std_Xtrain_path(dir_out_alg_ds,  dataset_id=ds) 
+                X_train = pd.read_csv(path_Xtrain)                  
+                pred_ci = fci.random_forest_error(forest=rf_model, X_train_shape=X_train.shape, X_test=df_attr_sub.to_numpy())
 
                 # compile prediction results:
                 df_pred =pd.DataFrame({'comid':comids_pred,
                              'prediction':resp_pred,
+                             'ci': pred_ci,
                              'metric':metric,
                              'dataset':ds,
                              'algo':algo,

@@ -380,6 +380,20 @@ def std_pred_path(dir_out: str | os.PathLike, algo: str, metric: str, dataset_id
     path_pred_rslt = Path(dir_preds_ds)/Path(basename_pred_alg_ds_metr)
     return path_pred_rslt
 
+def std_Xtrain_path(dir_out_alg_ds:str | os.PathLike, dataset_id: str) -> str:
+    """Standardize the algorithm save path
+    :param dir_out_alg_ds:  Directory where algorithm's output stored.
+    :type dir_out_alg_ds: str | os.PathLike
+    :param metric:  The metric or hydrologic signature identifier of interest
+    :type metric: str
+    :return: full save path for joblib object
+    :rtype: str
+    """
+    Path(dir_out_alg_ds).mkdir(exist_ok=True,parents=True)
+    basename_alg_ds = f'Xtrain__{dataset_id}'
+    path_Xtrain = Path(dir_out_alg_ds) / Path(basename_alg_ds + '.csv')
+    return path_Xtrain
+
 def _read_pred_comid(path_pred_locs: str | os.PathLike, comid_pred_col:str ) -> list[str]:
     """Read the comids from a prediction file formatted as .csv
 
@@ -397,11 +411,6 @@ def _read_pred_comid(path_pred_locs: str | os.PathLike, comid_pred_col:str ) -> 
     if '.csv' in Path(path_pred_locs).suffix:
         try:
             comids_pred = pd.read_csv(path_pred_locs)[comid_pred_col].values
-        except:
-            raise ValueError(f"Could not successfully read in {path_pred_locs} & select col {comid_pred_col}")
-    elif '.parquet' in Path(path_pred_locs).suffix:
-        try:
-            comids_pred = pd.read_parquet(path_pred_locs)[comid_pred_col].values
         except:
             raise ValueError(f"Could not successfully read in {path_pred_locs} & select col {comid_pred_col}")
     else:
@@ -555,6 +564,30 @@ class AlgoTrainEval:
             # e.g. {'activation':'relu'} becomes {'activation':['relu']}
             self.algo_config_grid  = self.convert_to_list(self.algo_config_grid)
 
+    def calculate_rf_uncertainty(self, forest, X_train, X_test):
+        """
+        Calculate uncertainty using forestci for a Random Forest model.
+
+        Parameters:
+            forest (RandomForestRegressor): Trained Random Forest model.
+            X_train (ndarray): Training data.
+            X_test (ndarray): Test data.
+
+        Returns:
+            ndarray: Confidence intervals for each prediction.
+        """
+        ci = fci.random_forest_error(
+            forest=forest,
+            X_train_shape=X_train.shape,
+            X_test=X_test,
+            inbag=None, 
+            calibrate=True, 
+            memory_constrained=False, 
+            memory_limit=None, 
+            y_output=0  # Change this if multi-output
+        )
+        return ci
+
     def train_algos(self):
         """Train algorithms based on what has been defined in the algo config file Algorithm options include the following:
         
@@ -576,26 +609,28 @@ class AlgoTrainEval:
             # --- Make predictions using the RandomForest model ---
             y_pred_rf = rf.predict(self.X_test)
 
-            # --- Inserting forestci for uncertainty calculation ---
-            ci = fci.random_forest_error(
-                forest=rf,
-                X_train_shape=self.X_train.shape,
-                X_test=self.X_test,  # Assuming X contains test samples
-                inbag=None, 
-                calibrate=True, 
-                memory_constrained=False, 
-                memory_limit=None, 
-                y_output=0  # Change this if multi-output
-            )
-            # ci now contains the confidence intervals for each prediction
+            # # --- Inserting forestci for uncertainty calculation ---
+            # ci = fci.random_forest_error(
+            #     forest=rf,
+            #     X_train_shape=self.X_train.shape,
+            #     X_test=self.X_test,  # Assuming X contains test samples
+            #     inbag=None, 
+            #     calibrate=True, 
+            #     memory_constrained=False, 
+            #     memory_limit=None, 
+            #     y_output=0  # Change this if multi-output
+            # )
+            # # ci now contains the confidence intervals for each prediction
             
+            # --- Calculate confidence intervals ---
+            ci = self.calculate_rf_uncertainty(rf, self.X_train, self.X_test)
+
             # --- Compare predictions with confidence intervals ---
-            print("Predictions using RandomForest model:", y_pred_rf)
-            print("Confidence intervals (ci) for predictions:", ci)
             self.algs_dict['rf'] = {'algo': rf,
                                     'pipeline': pipe_rf,
                                     'type': 'random forest regressor',
-                                    'metric': self.metric}
+                                    'metric': self.metric,
+                                    'ci': ci}
 
         if 'mlp' in self.algo_config:  # MULTI-LAYER PERCEPTRON
             
@@ -730,9 +765,11 @@ class AlgoTrainEval:
             
             # --- Modified part: Combine rf model and ci into a single dictionary ---
             pipeline_with_ci = {
-            'model': self.algs_dict[algo]['pipeline'],   # The trained model (Random Forest or other algorithm)
-            'confidence_intervals': self.algs_dict[algo].get('ci')  # The ci object if it exists
+            'pipe': self.algs_dict[algo]['pipeline'],   # The trained model (Random Forest or other algorithm)
+            'confidence_intervals': self.algs_dict[algo].get('ci',None)  # The ci object if it exists
             }
+            
+            # print(self.algs_dict[algo].get('ci'))
             
             # Save the combined pipeline (model + ci) using joblib
             joblib.dump(pipeline_with_ci, path_algo)

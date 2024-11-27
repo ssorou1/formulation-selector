@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 import fs_algo.fs_algo_train_eval as fsate
 import ast
+import joblib
 
 """Workflow script to train algorithms on catchment attribute data for predicting
     formulation metrics and/or hydrologic signatures.
@@ -16,9 +17,11 @@ import ast
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'process the algorithm config file')
     parser.add_argument('path_algo_config', type=str, help='Path to the YAML configuration file specific for algorithm training')
+    # parser.add_argument('path_pred_config', type=str, nargs='?', default='C:/Users/Soroush.Sorourian/git/formulation-selector/scripts/eval_ingest/xssa/xssa_algo_config.yaml', help='Path to the YAML configuration file specific for algorithm training.')
     args = parser.parse_args()
     home_dir = Path.home()
     path_algo_config = Path(args.path_algo_config) #Path(f'{home_dir}/git/formulation-selector/scripts/eval_ingest/xssa/xssa_algo_config.yaml') 
+    # path_algo_config = Path(f'{home_dir}/git/formulation-selector/scripts/eval_ingest/xssa/xssa_algo_config.yaml') 
 
     with open(path_algo_config, 'r') as file:
         algo_cfg = yaml.safe_load(file)
@@ -102,7 +105,14 @@ if __name__ == "__main__":
                                         dir_out_alg_ds=dir_out_alg_ds, dataset_id=ds,
                                         metr=metr,test_size=test_size, rs = seed,
                                         verbose=verbose)
+            
+                        
             train_eval.train_eval() # Train, test, eval wrapper
+            X_train = train_eval.X_train
+            X_train_df = pd.DataFrame(X_train)
+            # Save X_train as a CSV file
+            path_Xtrain = fsate.std_Xtrain_path(dir_out_alg_ds,  dataset_id=ds)
+            X_train_df.to_csv(path_Xtrain, index=False)            
             
             # Retrieve evaluation metrics dataframe
             rslt_eval[metr] = train_eval.eval_df
@@ -115,4 +125,4 @@ if __name__ == "__main__":
         print(f'... Wrote training and testing evaluation to file for {ds}')
 
         dat_resp.close()
-    print("FINISHED algorithm training, testing, & evaluation")
+        print("FINISHED algorithm training, testing, & evaluation")

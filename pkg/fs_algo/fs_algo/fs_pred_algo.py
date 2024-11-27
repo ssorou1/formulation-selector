@@ -40,7 +40,8 @@ if __name__ == "__main__":
     #%% ESTABLISH ALGORITHM FILE I/O
     dir_out = fsate.fs_save_algo_dir_struct(dir_base).get('dir_out')
     dir_out_alg_base = fsate.fs_save_algo_dir_struct(dir_base).get('dir_out_alg_base')
-    #%% PREDICTION FILE'S COMIDS
+    #%% PREDICTION FILE'S COMIDS (IMPLICIT ASSUMPTION: Each dataset processes the same IDS)
+    path_meta_pred = pred_cfg.get('path_meta')
     path_pred_locs = pred_cfg.get('pred_file_in').format(**attr_cfig.attrs_cfg_dict)
     comid_pred_col = pred_cfg.get('pred_file_comid_colname')
 

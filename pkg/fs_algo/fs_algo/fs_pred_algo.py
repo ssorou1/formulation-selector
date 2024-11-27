@@ -44,6 +44,8 @@ if __name__ == "__main__":
     path_meta_pred = pred_cfg.get('path_meta')
     path_pred_locs = pred_cfg.get('pred_file_in').format(**attr_cfig.attrs_cfg_dict)
     comid_pred_col = pred_cfg.get('pred_file_comid_colname')
+    write_type = pred_cfg.get('write_type')
+    ds_type = pred_cfg.get('ds_type')
 
     comids_pred = fsate._read_pred_comid(path_pred_locs, comid_pred_col )
 

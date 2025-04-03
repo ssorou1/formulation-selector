@@ -2204,7 +2204,8 @@ def plot_map_pred_wrap(test_gdf,dir_out_viz_base, ds,
 
 def plot_map_pred_mapie(geo_df:gpd.GeoDataFrame, states,title:str,metr:str,
                         y_pis: list, alpha_val:float,
-                  colname_data:str='performance'):
+                        min_err: float, max_err: float,
+                        colname_data:str='performance'):
     """Genereate a map of predicted response variables
 
     :param geo_df: Geodataframe of response variable results
@@ -2227,7 +2228,7 @@ def plot_map_pred_mapie(geo_df:gpd.GeoDataFrame, states,title:str,metr:str,
     total_err = lower_err + upper_err
 
     # Normalize marker size (scale from 100 to 300)
-    min_err, max_err = total_err.min(), total_err.max()
+    # min_err, max_err = total_err.min(), total_err.max()
     marker_sizes = 100 + 300 * (total_err - min_err) / (max_err - min_err)
 
     fig, ax = plt.subplots(1, 1, figsize=(20, 24))
@@ -2271,6 +2272,7 @@ def plot_map_pred_mapie(geo_df:gpd.GeoDataFrame, states,title:str,metr:str,
 def plot_map_pred_wrap_mapie(test_gdf,dir_out_viz_base, ds,
                       metr,algo_str,
                       y_pis: list, alpha_val:float,
+                      min_err: float, max_err: float,
                       split_type='test',
                       colname_data='performance'):
 
@@ -2286,7 +2288,9 @@ def plot_map_pred_wrap_mapie(test_gdf,dir_out_viz_base, ds,
     # Generate the map
     plot_title = f"Predicted Values: {metr} - {ds}"
     plot_pred_map = plot_map_pred_mapie(geo_df=test_gdf, states=states,title=plot_title,
-                                  metr=metr,y_pis=y_pis, alpha_val=alpha_val,colname_data=colname_data)
+                                  metr=metr,y_pis=y_pis, alpha_val=alpha_val,
+                                  min_err = min_err, max_err = max_err,
+                                  colname_data=colname_data)
 
     # Save the plot as a .png file
     plot_pred_map.savefig(path_pred_map_plot_mapie, dpi=300, bbox_inches='tight')

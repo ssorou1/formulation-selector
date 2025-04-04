@@ -41,6 +41,7 @@ if __name__ == "__main__":
     same_test_ids = algo_cfg.get('same_test_ids',True)
     
     mapie_alpha = algo_cfg['MAPIE_alpha']    
+    mapie_method = algo_cfg['MAPIE_method']
     bagging_ci_params_list = algo_cfg['Bagging_uncertainty']
     bagging_ci_params = {}
     if isinstance(bagging_ci_params_list, list):
@@ -196,6 +197,7 @@ if __name__ == "__main__":
                                         test_ids=test_ids,
                                         verbose=verbose,
                                         mapie_alpha=mapie_alpha,
+                                        mapie_method=mapie_method,
                                         bagging_ci_params=bagging_ci_params)
             train_eval.train_eval() # Train, test, eval wrapper
 

@@ -34,15 +34,14 @@ if __name__ == "__main__":
         algo_config['mlp'][0]['hidden_layer_sizes'] = ast.literal_eval(algo_config['mlp'][0]['hidden_layer_sizes'])
     algo_config_og = algo_config.copy()
 
-    verbose = algo_cfg['verbose']
-    test_size = algo_cfg['test_size']
-    seed = algo_cfg['seed']
+    verbose = algo_cfg.get('verbose',True)
+    test_size = algo_cfg.get('test_size',0.3)
+    seed = algo_cfg.get('seed',32)
     read_type = algo_cfg.get('read_type','all') # Arg for how to read attribute data using comids in fs_read_attr_comid(). May be 'all' or 'filename'.
     metrics = algo_cfg.get('metrics',None)
     make_plots = algo_cfg.get('make_plots',False)
     same_test_ids = algo_cfg.get('same_test_ids',True)
     confidence_levels = algo_cfg.get('confidence_levels',95)
-    
     uncertainty_cfg = algo_cfg.get('uncertainty', {})
 
     #%% Attribute configuration

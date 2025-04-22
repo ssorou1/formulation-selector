@@ -25,7 +25,7 @@ if __name__ == "__main__":
     with open(path_pred_config, 'r') as file:
         pred_cfg = yaml.safe_load(file)
     
-    mapie_alpha = pred_cfg.get('MAPIE_alpha', None)  
+    mapie_alpha = pred_cfg.get('MAPIE_alpha', None)
 
     #%%  READ CONTENTS FROM THE ATTRIBUTE CONFIG
     path_attr_config = fsate.build_cfig_path(path_pred_config,pred_cfg.get('name_attr_config',None))
@@ -45,6 +45,13 @@ if __name__ == "__main__":
         algo_cfg = yaml.safe_load(file)
     name_attr_csv = algo_cfg.get('name_attr_csv',None)
     colname_attr_csv = algo_cfg.get('colname_attr_csv',None)
+    # Determine whether random forest confidence intervals computed during model training:
+    fci = algo_cfg.get('uncertainty',{}).get('fci',{})
+    if len(fci)>0:
+        forestci = fci[0].get('forestci',False)
+    else:
+        forestci = False
+    # Attributes needed for prediction:
     attrs_sel = fsate._id_attrs_sel_wrap(attr_cfig=attr_cfig,
                     path_cfig=path_attr_config,
                     name_attr_csv = name_attr_csv,
@@ -63,11 +70,8 @@ if __name__ == "__main__":
     resp_vars = pred_cfg.get('algo_response_vars')
     algos = pred_cfg.get('algo_type')
 
-
-
     #%% Run prediction
     for ds in datasets:
-
          # f-string formatting of the attribute metadata's filepath
         path_pred_locs = f'{path_meta_pred}'.format(dir_std_base=dir_std_base,ds=ds,ds_type=ds_type, write_type=write_type)
 
@@ -112,7 +116,7 @@ if __name__ == "__main__":
                 pipe = pipeline_data['pipeline']
                 X_train_shape = pipeline_data['X_train_shape']  # Retrieve X_train.shape
 
-                rf_model = pipe.named_steps['randomforestregressor']  # Use the correct step name
+
                 feat_names = list(pipe.feature_names_in_)
                 df_attr_sub = df_attr_wide[feat_names]
 
@@ -132,7 +136,8 @@ if __name__ == "__main__":
                 df_pred = pd.DataFrame({'featureID': comids_pred, 'prediction': resp_pred, 'metric': metric, 'dataset': ds, 'algo': algo, 'name_algo': Path(path_algo).name})
         
                 # If using RandomForest, calculate confidence intervals using forestci
-                if algo == 'rf':
+                if algo == 'rf' and forestci:
+                    rf_model = pipe.named_steps['randomforestregressor']  # Use the correct step name
                     forest_ci = fci.random_forest_error(forest=rf_model, X_train_shape=X_train_shape, X_test=df_attr_sub.to_numpy())
                     df_pred['forestci'] = forest_ci
         
@@ -145,7 +150,12 @@ if __name__ == "__main__":
                     for i, alpha in enumerate(mapie_alpha):
                         df_pred[f'mapie_lower_{alpha:.2f}'] = y_pis[:, 0, i]
                         df_pred[f'mapie_upper_{alpha:.2f}'] = y_pis[:, 1, i]
-                
+                elif mapie_alpha and 'mapie' not in pipeline_data:
+                    warnings.warn("MAPIE prediction interval estimation is not available in the " \
+                    "trained algorithm pipeline, but mapie_alpha is specified in the prediction config file." \
+                    "If prediction uncertainty desired, re-run the algorithm training fs_proc_algo_viz.py, " \
+                    "with mapie specified in the Uncertainty section of the algo config file.")
+
                 path_pred_out = fsate.std_pred_path(dir_out,algo=algo,metric=metric,dataset_id=ds)
                 # Write prediction results
                 df_pred.to_parquet(path_pred_out)

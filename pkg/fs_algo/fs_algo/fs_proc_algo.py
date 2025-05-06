@@ -5,6 +5,10 @@ from pathlib import Path
 import fs_algo.fs_algo_train_eval as fsate
 import ast
 import numpy as np
+import pandera as pa
+from pandera import Column, DataFrameSchema, Index
+from pandera.typing import Series
+from datetime import datetime
 
 """Workflow script to train algorithms on catchment attribute data for predicting
     formulation metrics and/or hydrologic signatures.
@@ -37,6 +41,40 @@ if __name__ == "__main__":
     confidence_levels = algo_cfg.get('confidence_levels',95)
     
     uncertainty_cfg = algo_cfg.get('uncertainty', {})
+
+    # %% Introducing DataFrameSchema for dataframe objects
+    df_attr_schema = DataFrameSchema(
+        columns={
+            "featureID": Column(pa.Object, nullable=False),  # accepts int or str
+            "featureSource": Column(
+                str,
+                checks=pa.Check.isin(["COMID", "custom_hfuid"]),
+                nullable=False
+            ),
+            "data_source": Column(
+                str,
+                checks=pa.Check.isin(["hydroatlas__v1", "usgs_nhdplus__v2"]),
+                nullable=False
+            ),
+            "dl_timestamp": Column(
+                pa.DateTime,
+                nullable=False
+            ),
+            "attribute": Column(
+                str,
+                checks=pa.Check.str_length(1, 30),
+                nullable=False
+            ),
+            "value": Column(
+                float,
+                nullable=False
+            ),
+        },
+        index=Index(int, name=None),
+        coerce=True,
+        strict=True,
+        name="DFAttr"
+    )
 
     #%% Attribute configuration
     name_attr_config = algo_cfg.get('name_attr_config', Path(path_algo_config).name.replace('algo','attr')) 
@@ -109,6 +147,9 @@ if __name__ == "__main__":
         # Convert into wide format for model training
         df_attr_wide = df_attr.pivot(index='featureID', columns = 'attribute', values = 'value')
 
+        # Validating df_attr DataFrame object
+        validated_df_attr = df_attr_schema.validate(df_attr)
+        
     # %% Train, test, and evaluate
         rslt_eval = dict()
         for metr in metrics:

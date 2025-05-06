@@ -10,6 +10,11 @@ import os
 import numpy as np
 import forestci as fci
 from sklearn.model_selection import train_test_split
+import pandera as pa
+from pandera import Column, DataFrameSchema, Index, Check
+from pandera.typing import Series
+from datetime import datetime
+import re
 
 # TODO create a function that's flexible/converts user formatted checks (a la fs_prep)
 
@@ -26,6 +31,36 @@ if __name__ == "__main__":
         pred_cfg = yaml.safe_load(file)
     
     mapie_alpha = pred_cfg.get('MAPIE_alpha', None)
+
+    # %% Introducing DataFrameSchema for dataframe objects
+    df_attr_schema = DataFrameSchema(
+        columns={
+            "featureID": Column(pa.Object, nullable=False),  # accepts int or str
+            "featureSource": Column(
+                str,
+                checks=pa.Check.isin(["COMID", "custom_hfuid"]),
+                nullable=False
+            ),
+            "data_source": Column(
+                str,
+                checks=pa.Check.isin(["hydroatlas__v1", "usgs_nhdplus__v2"]),
+                nullable=False
+            ),
+            "attribute": Column(
+                str,
+                checks=pa.Check.str_length(1, 30),
+                nullable=False
+            ),
+            "value": Column(
+                float,
+                nullable=False
+            ),
+        },
+        index=Index(int, name=None),
+        coerce=True,
+        strict=True,
+        name="DFAttr"
+    )
 
     #%%  READ CONTENTS FROM THE ATTRIBUTE CONFIG
     path_attr_config = fsate.build_cfig_path(path_pred_config,pred_cfg.get('name_attr_config',None))
@@ -83,6 +118,9 @@ if __name__ == "__main__":
                                            read_type = 'all', # 'all' tends to be the fastest
                                         _s3 = None,storage_options=None)
         df_attr = df_attr.drop(columns='dl_timestamp')
+        # Validating DataFrame object
+        validated_df_attr = df_attr_schema.validate(df_attr)
+
         # Constrain the values in the value column to two digits after the decimal point (to help ID duplicates)
         df_attr['value'] = df_attr['value'].apply(lambda x: round(x, 2))
 

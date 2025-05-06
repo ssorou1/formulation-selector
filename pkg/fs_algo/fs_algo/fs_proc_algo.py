@@ -9,6 +9,7 @@ import pandera as pa
 from pandera import Column, DataFrameSchema, Index
 from pandera.typing import Series
 from datetime import datetime
+import re
 
 """Workflow script to train algorithms on catchment attribute data for predicting
     formulation metrics and/or hydrologic signatures.
@@ -76,6 +77,25 @@ if __name__ == "__main__":
         name="DFAttr"
     )
 
+    wkt_point_pattern = r"^POINT\s*\(\-?\d+(\.\d+)?\s+\-?\d+(\.\d+)?\)$"
+    
+    gdf_comid_schema = DataFrameSchema(
+        columns={
+            "comid": Column(int, nullable=False),
+            "gage_id": Column(int, nullable=False),
+            "geometry": Column(
+                str,
+                checks=pa.Check.str_matches(wkt_point_pattern),
+                nullable=False
+            )
+        },
+        index=Index(int),
+        coerce=True,
+        strict=True,
+        name="GDFComid"
+    )
+    
+    
     #%% Attribute configuration
     name_attr_config = algo_cfg.get('name_attr_config', Path(path_algo_config).name.replace('algo','attr')) 
     path_attr_config = fsate.build_cfig_path(path_algo_config, name_attr_config)
@@ -131,8 +151,11 @@ if __name__ == "__main__":
                                             gage_ids=dat_resp['gage_id'].values)
         # Subset to the gage ids only selected for training (just in case some predictions make it into dat_resp)
         gdf_comid = gdf_comid[gdf_comid['gage_id'].astype(str).isin(dat_resp['gage_id'].values)]
-        comids_resp = gdf_comid['comid']
-        
+
+        # Validating df_attr DataFrame object
+        validated_gdf_comid = gdf_comid_schema.validate(gdf_comid) 
+
+        comids_resp = gdf_comid['comid']        
         dat_resp = dat_resp.assign_coords(comid = comids_resp)
         
         # Remove the unknown comids:

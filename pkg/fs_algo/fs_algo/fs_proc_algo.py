@@ -6,7 +6,7 @@ import fs_algo.fs_algo_train_eval as fsate
 import ast
 import numpy as np
 import pandera as pa
-from pandera import Column, DataFrameSchema, Index
+from pandera import Column, DataFrameSchema, Index, Check
 from pandera.typing import Series
 from datetime import datetime
 import re
@@ -77,8 +77,8 @@ if __name__ == "__main__":
         name="DFAttr"
     )
 
-    wkt_point_pattern = r"^POINT\s*\(\-?\d+(\.\d+)?\s+\-?\d+(\.\d+)?\)$"
-    
+
+    wkt_point_pattern = r"^POINT\s*\(\-?\d+(\.\d+)?\s+\-?\d+(\.\d+)?\)$"    
     gdf_comid_schema = DataFrameSchema(
         columns={
             "comid": Column(int, nullable=False),
@@ -95,7 +95,52 @@ if __name__ == "__main__":
         name="GDFComid"
     )
     
-    
+
+    rslt_eval_df_schema = pa.DataFrameSchema(
+        {
+            "algorithm": Column(
+                pa.String,
+                checks=Check.isin(["rf", "mlp"]),
+                nullable=False
+            ),
+            "type": Column(
+                pa.String,
+                checks=Check.isin(["random forest regressor", "multi-layer perceptron regressor"]),
+                nullable=False
+            ),
+            "metric": Column(
+                pa.String,
+                checks=Check.isin(["NSE", "RMSE", "KGE"]),
+                nullable=False
+            ),
+            "mse": Column(
+                pa.Float,
+                nullable=False
+            ),
+            "r2": Column(
+                pa.Float,
+                nullable=False
+            ),
+            "dataset": Column(
+                pa.String,
+                nullable=False
+            ),
+            "file_pipe": Column(
+                pa.String,
+                checks=Check.str_matches(r".+\.joblib$"),
+                nullable=False
+            ),
+            "algo": Column(
+                pa.String,
+                checks=Check.isin(["rf", "mlp"]),
+                nullable=False
+            ),
+        },
+        index=pa.Index(pa.Int),
+        coerce=True,
+        strict=True,
+        name="RsltEvalDF"
+    )    
     #%% Attribute configuration
     name_attr_config = algo_cfg.get('name_attr_config', Path(path_algo_config).name.replace('algo','attr')) 
     path_attr_config = fsate.build_cfig_path(path_algo_config, name_attr_config)
@@ -152,7 +197,7 @@ if __name__ == "__main__":
         # Subset to the gage ids only selected for training (just in case some predictions make it into dat_resp)
         gdf_comid = gdf_comid[gdf_comid['gage_id'].astype(str).isin(dat_resp['gage_id'].values)]
 
-        # Validating df_attr DataFrame object
+        # Validating DataFrame object
         validated_gdf_comid = gdf_comid_schema.validate(gdf_comid) 
 
         comids_resp = gdf_comid['comid']        
@@ -170,7 +215,7 @@ if __name__ == "__main__":
         # Convert into wide format for model training
         df_attr_wide = df_attr.pivot(index='featureID', columns = 'attribute', values = 'value')
 
-        # Validating df_attr DataFrame object
+        # Validating DataFrame object
         validated_df_attr = df_attr_schema.validate(df_attr)
         
     # %% Train, test, and evaluate
@@ -206,6 +251,8 @@ if __name__ == "__main__":
             del train_eval
         # Compile results and write to file
         rslt_eval_df = pd.concat(rslt_eval).reset_index(drop=True)
+        # Validating DataFrame object
+        validated_rslt_eval_df = rslt_eval_df_schema.validate(rslt_eval_df) 
         rslt_eval_df['dataset'] = ds
         rslt_eval_df.to_parquet(Path(dir_out_alg_ds)/Path('algo_eval_'+ds+'.parquet'))
 

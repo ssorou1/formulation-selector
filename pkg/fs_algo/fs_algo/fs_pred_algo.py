@@ -62,6 +62,35 @@ if __name__ == "__main__":
         name="DFAttr"
     )
 
+
+    df_pred_schema_dict = {
+        "featureID": Column(pa.Int, nullable=False),
+        "prediction": Column(pa.Float, nullable=False),
+        "metric": Column(pa.String, checks=Check.isin(["NSE", "RMSE", "KGE"]), nullable=False),
+        "dataset": Column(pa.String, nullable=False),
+        "algo": Column(pa.String, checks=Check.isin(["rf", "mlp"]), nullable=False),
+        "name_algo": Column(pa.String, checks=Check.str_matches(r".+\.joblib$"), nullable=False),
+        "forestci": Column(pa.Float, nullable=True)  # Optional if not always present
+    }
+    
+    # Dynamically add mapie_lower and mapie_upper columns if mapie_alpha is not empty
+    for alpha in mapie_alpha:
+        # Convert to string with consistent format (e.g., 0.05 -> "0.05")
+        alpha_str = f"{alpha:.2f}".rstrip("0").rstrip(".") if "." in f"{alpha:.2f}" else f"{alpha:.2f}"
+        col_name1 = f"mapie_lower_{alpha_str}"
+        col_name2 = f"mapie_upper_{alpha_str}"
+        df_pred_schema_dict[col_name1] = Column(pa.Float, nullable=True)
+        df_pred_schema_dict[col_name2] = Column(pa.Float, nullable=True)
+    
+    # Create the DataFrameSchema
+    df_pred_schema = pa.DataFrameSchema(
+        df_pred_schema_dict,
+        index=pa.Index(pa.Int),
+        coerce=True,
+        strict=True,
+        name="DFPred"
+    )
+    
     #%%  READ CONTENTS FROM THE ATTRIBUTE CONFIG
     path_attr_config = fsate.build_cfig_path(path_pred_config,pred_cfg.get('name_attr_config',None))
     path_algo_config = fsate.build_cfig_path(path_pred_config,pred_cfg.get('name_algo_config',None))
@@ -194,6 +223,8 @@ if __name__ == "__main__":
                     "If prediction uncertainty desired, re-run the algorithm training fs_proc_algo_viz.py, " \
                     "with mapie specified in the Uncertainty section of the algo config file.")
 
+                # Validating DataFrame object
+                validated_df_pred = df_pred_schema .validate(df_pred)
                 path_pred_out = fsate.std_pred_path(dir_out,algo=algo,metric=metric,dataset_id=ds)
                 # Write prediction results
                 df_pred.to_parquet(path_pred_out)

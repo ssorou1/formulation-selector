@@ -44,103 +44,50 @@ if __name__ == "__main__":
     uncertainty_cfg = algo_cfg.get('uncertainty', {})
 
     # %% Introducing DataFrameSchema for dataframe objects
-    df_attr_schema = DataFrameSchema(
+    schema_df_attr = DataFrameSchema(
         columns={
             "featureID": Column(pa.Object, nullable=False),  # accepts int or str
-            "featureSource": Column(
-                str,
-                checks=pa.Check.isin(["COMID", "custom_hfuid"]),
-                nullable=False
-            ),
-            "data_source": Column(
-                str,
-                checks=pa.Check.isin(["hydroatlas__v1", "usgs_nhdplus__v2"]),
-                nullable=False
-            ),
-            "dl_timestamp": Column(
-                pa.DateTime,
-                nullable=False
-            ),
-            "attribute": Column(
-                str,
-                checks=pa.Check.str_length(1, 30),
-                nullable=False
-            ),
-            "value": Column(
-                float,
-                nullable=False
-            ),
+            "featureSource": Column(str,checks=pa.Check.isin(["COMID", "custom_hfuid"]),nullable=False),
+            "data_source": Column(str,checks=pa.Check.isin(["hydroatlas__v1", "usgs_nhdplus__v2"]),nullable=False),
+            "dl_timestamp": Column(pa.DateTime,nullable=False),
+            "attribute": Column(str,checks=pa.Check.str_length(1, 30),nullable=False),
+            "value": Column(float,nullable=False),
         },
-        index=Index(int, name=None),
-        coerce=True,
-        strict=True,
-        name="DFAttr"
+        index=Index(int, name=None),coerce=True,strict=True,name="DFAttr"
     )
 
 
     wkt_point_pattern = r"^POINT\s*\(\-?\d+(\.\d+)?\s+\-?\d+(\.\d+)?\)$"    
-    gdf_comid_schema = DataFrameSchema(
+    schema_gdf_comid = DataFrameSchema(
         columns={
             "comid": Column(int, nullable=False),
             "gage_id": Column(int, nullable=False),
-            "geometry": Column(
-                str,
-                checks=pa.Check.str_matches(wkt_point_pattern),
-                nullable=False
-            )
+            "geometry": Column(str,checks=pa.Check.str_matches(wkt_point_pattern),nullable=False)
         },
-        index=Index(int),
-        coerce=True,
-        strict=True,
-        name="GDFComid"
+        index=Index(int),coerce=True,strict=True,name="GDFComid"
     )
     
 
-    rslt_eval_df_schema = pa.DataFrameSchema(
+    schema_rslt_eval_df = pa.DataFrameSchema(
         {
-            "algorithm": Column(
-                pa.String,
-                checks=Check.isin(["rf", "mlp"]),
-                nullable=False
-            ),
-            "type": Column(
-                pa.String,
-                checks=Check.isin(["random forest regressor", "multi-layer perceptron regressor"]),
-                nullable=False
-            ),
-            "metric": Column(
-                pa.String,
-                checks=Check.isin(["NSE", "RMSE", "KGE"]),
-                nullable=False
-            ),
-            "mse": Column(
-                pa.Float,
-                nullable=False
-            ),
-            "r2": Column(
-                pa.Float,
-                nullable=False
-            ),
-            "dataset": Column(
-                pa.String,
-                nullable=False
-            ),
-            "file_pipe": Column(
-                pa.String,
-                checks=Check.str_matches(r".+\.joblib$"),
-                nullable=False
-            ),
-            "algo": Column(
-                pa.String,
-                checks=Check.isin(["rf", "mlp"]),
-                nullable=False
-            ),
+            "algorithm": Column(pa.String,checks=Check.isin(["rf", "mlp"]),nullable=False),
+            "type": Column(pa.String,checks=Check.isin(["random forest regressor", "multi-layer perceptron regressor"]),nullable=False),
+            "metric": Column(pa.String,checks=Check.isin(["NSE", "RMSE", "KGE"]),nullable=False),
+            "mse": Column(pa.Float,nullable=False),
+            "r2": Column(pa.Float,nullable=False),
+            "dataset": Column(pa.String,nullable=False),
+            "file_pipe": Column(pa.String,checks=Check.str_matches(r".+\.joblib$"),nullable=False),
+            "algo": Column(pa.String,checks=Check.isin(["rf", "mlp"]),nullable=False),
         },
-        index=pa.Index(pa.Int),
-        coerce=True,
-        strict=True,
-        name="RsltEvalDF"
-    )    
+        index=pa.Index(pa.Int),coerce=True,strict=True,name="RsltEvalDF"
+    )
+
+    schema_attrs_sel = DataFrameSchema(
+        {
+            0: Column(pa.String,nullable=False),
+            },
+        index=pa.Index(pa.Int),coerce=True,strict=True,name="AttrsSelDF"
+    )
     #%% Attribute configuration
     name_attr_config = algo_cfg.get('name_attr_config', Path(path_algo_config).name.replace('algo','attr')) 
     path_attr_config = fsate.build_cfig_path(path_algo_config, name_attr_config)
@@ -164,6 +111,9 @@ if __name__ == "__main__":
                     path_cfig=path_attr_config,
                     name_attr_csv = name_attr_csv,
                     colname_attr_csv = colname_attr_csv)
+    
+    # Validating DataFrame object
+    validated_attrs_sel = schema_attrs_sel.validate(pd.DataFrame(attrs_sel)) 
     
     # Define directories/datasets from the attribute config file
     dir_db_attrs = attr_cfig.attrs_cfg_dict.get('dir_db_attrs')
@@ -198,7 +148,7 @@ if __name__ == "__main__":
         gdf_comid = gdf_comid[gdf_comid['gage_id'].astype(str).isin(dat_resp['gage_id'].values)]
 
         # Validating DataFrame object
-        validated_gdf_comid = gdf_comid_schema.validate(gdf_comid) 
+        validated_gdf_comid = schema_gdf_comid.validate(gdf_comid) 
 
         comids_resp = gdf_comid['comid']        
         dat_resp = dat_resp.assign_coords(comid = comids_resp)
@@ -216,7 +166,7 @@ if __name__ == "__main__":
         df_attr_wide = df_attr.pivot(index='featureID', columns = 'attribute', values = 'value')
 
         # Validating DataFrame object
-        validated_df_attr = df_attr_schema.validate(df_attr)
+        validated_df_attr = schema_df_attr.validate(df_attr)
         
     # %% Train, test, and evaluate
         rslt_eval = dict()
@@ -252,7 +202,7 @@ if __name__ == "__main__":
         # Compile results and write to file
         rslt_eval_df = pd.concat(rslt_eval).reset_index(drop=True)
         # Validating DataFrame object
-        validated_rslt_eval_df = rslt_eval_df_schema.validate(rslt_eval_df) 
+        validated_rslt_eval_df = schema_rslt_eval_df.validate(rslt_eval_df) 
         rslt_eval_df['dataset'] = ds
         rslt_eval_df.to_parquet(Path(dir_out_alg_ds)/Path('algo_eval_'+ds+'.parquet'))
 

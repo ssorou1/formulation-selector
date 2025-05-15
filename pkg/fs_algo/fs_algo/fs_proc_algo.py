@@ -10,6 +10,8 @@ from pandera import Column, DataFrameSchema, Index, Check
 from pandera.typing import Series
 from datetime import datetime
 import re
+import importlib.util
+import sys
 
 """Workflow script to train algorithms on catchment attribute data for predicting
     formulation metrics and/or hydrologic signatures.
@@ -22,9 +24,28 @@ import re
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'process the algorithm config file')
     parser.add_argument('path_algo_config', type=str, help='Path to the YAML configuration file specific for algorithm training')
+    parser.add_argument('--validate', action='store_true', help='Enable schema loading for data validation')
     args = parser.parse_args()
 
     path_algo_config = Path(args.path_algo_config) #Path(f'~/git/formulation-selector/scripts/eval_ingest/xssa/xssa_algo_config.yaml') 
+    config_dir = path_algo_config.parent
+
+    # Conditionally load schemas
+    if args.validate:
+        arg_val = True
+        schema_file = config_dir / "schemas.py"
+    
+        if not schema_file.exists():
+            raise FileNotFoundError(f"No schema file found at expected location: {schema_file}")
+    
+        # Dynamically import schemas.py
+        spec = importlib.util.spec_from_file_location("schemas", str(schema_file))
+        schemas = importlib.util.module_from_spec(spec)
+        sys.modules["schemas"] = schemas
+        spec.loader.exec_module(schemas)
+    
+        print("Loaded schemas:")
+        print(dir(schemas))  
 
     with open(path_algo_config, 'r') as file:
         algo_cfg = yaml.safe_load(file)
@@ -43,56 +64,6 @@ if __name__ == "__main__":
     
     uncertainty_cfg = algo_cfg.get('uncertainty', {})
 
-    # %% Introducing DataFrameSchema for dataframe objects
-    schema_df_attr = DataFrameSchema({
-            "featureID": Column(pa.Object, nullable=False),  # accepts int or str
-            "featureSource": Column(str,checks=pa.Check.isin(["COMID", "custom_hfuid"]),nullable=False),
-            "data_source": Column(str,checks=pa.Check.isin(["hydroatlas__v1", "usgs_nhdplus__v2"]),nullable=False),
-            "dl_timestamp": Column(pa.DateTime,nullable=False),
-            "attribute": Column(str,checks=pa.Check.str_length(1, 30),nullable=False),
-            "value": Column(float,nullable=False),
-        },
-        index=Index(int, name=None),coerce=True,strict=True,name="DFAttr"
-    )
-
-
-    wkt_point_pattern = r"^POINT\s*\(\-?\d+(\.\d+)?\s+\-?\d+(\.\d+)?\)$"    
-    schema_gdf_comid = DataFrameSchema({
-            "comid": Column(int, nullable=False),
-            "gage_id": Column(int, nullable=False),
-            "geometry": Column(str,checks=pa.Check.str_matches(wkt_point_pattern),nullable=False)
-        },
-        index=Index(int),coerce=True,strict=True,name="GDFComid"
-    )
-    
-
-    schema_rslt_eval_df = pa.DataFrameSchema({
-            "algorithm": Column(pa.String,checks=Check.isin(["rf", "mlp"]),nullable=False),
-            "type": Column(pa.String,checks=Check.isin(["random forest regressor", "multi-layer perceptron regressor"]),nullable=False),
-            "metric": Column(pa.String,checks=Check.isin(["NSE", "RMSE", "KGE"]),nullable=False),
-            "mse": Column(pa.Float,nullable=False),
-            "r2": Column(pa.Float,nullable=False),
-            "dataset": Column(pa.String,nullable=False),
-            "file_pipe": Column(pa.String,checks=Check.str_matches(r".+\.joblib$"),nullable=False),
-            "algo": Column(pa.String,checks=Check.isin(["rf", "mlp"]),nullable=False),
-        },
-        index=pa.Index(pa.Int),coerce=True,strict=True,name="RsltEvalDF"
-    )
-
-    schema_attrs_sel = DataFrameSchema({
-            0: Column(pa.String,nullable=False),
-            },
-        index=pa.Index(pa.Int),coerce=True,strict=True,name="AttrsSelDF"
-    )
-    
-    schema_dat_resp = pa.DataFrameSchema({
-        "basin_name": Column(str, nullable=False),
-        "RMSE": Column(float, nullable=False),
-        "NSE": Column(float, nullable=False),
-        "KGE": Column(float, nullable=False),
-        "gage_id": Column(int, nullable=False),
-        "comid": Column(int, nullable=False),
-    })
     #%% Attribute configuration
     name_attr_config = algo_cfg.get('name_attr_config', Path(path_algo_config).name.replace('algo','attr')) 
     path_attr_config = fsate.build_cfig_path(path_algo_config, name_attr_config)
@@ -118,7 +89,14 @@ if __name__ == "__main__":
                     colname_attr_csv = colname_attr_csv)
     
     # Validating DataFrame object
-    validated_attrs_sel = schema_attrs_sel.validate(pd.DataFrame(attrs_sel)) 
+    if arg_val:
+        try:
+            schema_attrs_sel = schemas.schema_attrs_sel  # Load schema from schemas.py
+            validated_attrs_sel = schema_attrs_sel.validate(pd.DataFrame(attrs_sel))
+            print("✅ DataFrame validated successfully.")
+        except Exception as e:
+            print(f"❌ Validation failed: {e}")
+            sys.exit(1)
     
     # Define directories/datasets from the attribute config file
     dir_db_attrs = attr_cfig.attrs_cfg_dict.get('dir_db_attrs')
@@ -153,8 +131,15 @@ if __name__ == "__main__":
         gdf_comid = gdf_comid[gdf_comid['gage_id'].astype(str).isin(dat_resp['gage_id'].values)]
 
         # Validating DataFrame object
-        validated_gdf_comid = schema_gdf_comid.validate(gdf_comid) 
-
+        if arg_val:
+            try:
+                schema_gdf_comid = schemas.schema_gdf_comid  # Load schema from schemas.py
+                validated_gdf_comid = schema_gdf_comid.validate(gdf_comid)
+                print("✅ DataFrame validated successfully.")
+            except Exception as e:
+                print(f"❌ Validation failed: {e}")
+                sys.exit(1)
+        
         comids_resp = gdf_comid['comid']        
         dat_resp = dat_resp.assign_coords(comid = comids_resp)
         
@@ -172,8 +157,16 @@ if __name__ == "__main__":
             "gage_id": dat_resp["gage_id"].values.astype(int),
             "comid": dat_resp["comid"].values.astype(int),
         })
-        validated_dat_resp = schema_dat_resp.validate(tempDF_dat_resp)
 
+        if arg_val:
+            try:
+                schema_dat_resp = schemas.schema_dat_resp  # Load schema from schemas.py
+                validated_dat_resp = schema_dat_resp.validate(tempDF_dat_resp)
+                print("✅ DataFrame validated successfully.")
+            except Exception as e:
+                print(f"❌ Validation failed: {e}")
+                sys.exit(1)
+                
         #%%  Read in predictor variable data (aka basin attributes) 
         # Read the predictor variable data (basin attributes) generated by proc.attr.hydfab
         df_attr = fsate.fs_read_attr_comid(dir_db_attrs, comids_resp, attrs_sel = attrs_sel,
@@ -182,8 +175,15 @@ if __name__ == "__main__":
         df_attr_wide = df_attr.pivot(index='featureID', columns = 'attribute', values = 'value')
 
         # Validating DataFrame object
-        validated_df_attr = schema_df_attr.validate(df_attr)
-        
+        if arg_val:
+            try:
+                schema_df_attr = schemas.schema_df_attr  # Load schema from schemas.py
+                validated_df_attr = schema_df_attr.validate(df_attr)
+                print("✅ DataFrame validated successfully.")
+            except Exception as e:
+                print(f"❌ Validation failed: {e}")
+                sys.exit(1)
+                
     # %% Train, test, and evaluate
         rslt_eval = dict()
         for metr in metrics:
@@ -218,7 +218,15 @@ if __name__ == "__main__":
         # Compile results and write to file
         rslt_eval_df = pd.concat(rslt_eval).reset_index(drop=True)
         # Validating DataFrame object
-        validated_rslt_eval_df = schema_rslt_eval_df.validate(rslt_eval_df) 
+        if arg_val:
+            try:
+                schema_rslt_eval_df = schemas.schema_rslt_eval_df  # Load schema from schemas.py
+                validated_rslt_eval_df = schema_rslt_eval_df.validate(rslt_eval_df)
+                print("✅ DataFrame validated successfully.")
+            except Exception as e:
+                print(f"❌ Validation failed: {e}")
+                sys.exit(1)
+
         rslt_eval_df['dataset'] = ds
         rslt_eval_df.to_parquet(Path(dir_out_alg_ds)/Path('algo_eval_'+ds+'.parquet'))
 

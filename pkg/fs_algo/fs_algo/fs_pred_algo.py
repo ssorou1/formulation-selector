@@ -17,6 +17,8 @@ from datetime import datetime
 import re
 from typing import Any, Dict, Tuple, Optional
 from pydantic import BaseModel, field_validator, model_validator, ValidationError
+import importlib.util
+import sys
 
 # TODO create a function that's flexible/converts user formatted checks (a la fs_prep)
 
@@ -29,6 +31,26 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     path_pred_config = Path(args.path_pred_config) #Path(f'~/git/formulation-selector/scripts/eval_ingest/xssa/xssa_pred_config.yaml') 
+    config_dir = path_pred_config.parent
+
+    # Conditionally load schemas
+    if args.validate:
+        arg_val = True
+        schema_file = config_dir / "schemas.py"
+    
+        if not schema_file.exists():
+            raise FileNotFoundError(f"No schema file found at expected location: {schema_file}")
+    
+        # Dynamically import schemas.py
+        spec = importlib.util.spec_from_file_location("schemas", str(schema_file))
+        schemas = importlib.util.module_from_spec(spec)
+        sys.modules["schemas"] = schemas
+        spec.loader.exec_module(schemas)
+    
+        print("Loaded schemas:")
+        print(dir(schemas))  
+
+
     with open(path_pred_config, 'r') as file:
         pred_cfg = yaml.safe_load(file)
     
@@ -89,65 +111,7 @@ if __name__ == "__main__":
                             raise ValueError(f"bagging_confidence_intervals -> {k} -> {bound} must be a NumPy array of floats")
 
             return values
-    # %% Introducing DataFrameSchema for dataframe objects
-    df_attr_schema = DataFrameSchema(
-        columns={
-            "featureID": Column(pa.Object, nullable=False),  # accepts int or str
-            "featureSource": Column(
-                str,
-                checks=pa.Check.isin(["COMID", "custom_hfuid"]),
-                nullable=False
-            ),
-            "data_source": Column(
-                str,
-                checks=pa.Check.isin(["hydroatlas__v1", "usgs_nhdplus__v2"]),
-                nullable=False
-            ),
-            "attribute": Column(
-                str,
-                checks=pa.Check.str_length(1, 30),
-                nullable=False
-            ),
-            "value": Column(
-                float,
-                nullable=False
-            ),
-        },
-        index=Index(int, name=None),
-        coerce=True,
-        strict=True,
-        name="DFAttr"
-    )
 
-
-    df_pred_schema_dict = {
-        "featureID": Column(pa.Int, nullable=False),
-        "prediction": Column(pa.Float, nullable=False),
-        "metric": Column(pa.String, checks=Check.isin(["NSE", "RMSE", "KGE"]), nullable=False),
-        "dataset": Column(pa.String, nullable=False),
-        "algo": Column(pa.String, checks=Check.isin(["rf", "mlp"]), nullable=False),
-        "name_algo": Column(pa.String, checks=Check.str_matches(r".+\.joblib$"), nullable=False),
-        "forestci": Column(pa.Float, nullable=True)  # Optional if not always present
-    }
-    
-    # Dynamically add mapie_lower and mapie_upper columns if mapie_alpha is not empty
-    for alpha in mapie_alpha:
-        # Convert to string with consistent format (e.g., 0.05 -> "0.05")
-        alpha_str = f"{alpha:.2f}".rstrip("0").rstrip(".") if "." in f"{alpha:.2f}" else f"{alpha:.2f}"
-        col_name1 = f"mapie_lower_{alpha_str}"
-        col_name2 = f"mapie_upper_{alpha_str}"
-        df_pred_schema_dict[col_name1] = Column(pa.Float, nullable=True)
-        df_pred_schema_dict[col_name2] = Column(pa.Float, nullable=True)
-    
-    # Create the DataFrameSchema
-    df_pred_schema = pa.DataFrameSchema(
-        df_pred_schema_dict,
-        index=pa.Index(pa.Int),
-        coerce=True,
-        strict=True,
-        name="DFPred"
-    )
-    
     #%%  READ CONTENTS FROM THE ATTRIBUTE CONFIG
     path_attr_config = fsate.build_cfig_path(path_pred_config,pred_cfg.get('name_attr_config',None))
     path_algo_config = fsate.build_cfig_path(path_pred_config,pred_cfg.get('name_algo_config',None))
@@ -203,10 +167,18 @@ if __name__ == "__main__":
         df_attr = fsate.fs_read_attr_comid(dir_db_attrs, comids_pred, attrs_sel = attrs_sel,
                                            read_type = 'all', # 'all' tends to be the fastest
                                         _s3 = None,storage_options=None)
-        df_attr = df_attr.drop(columns='dl_timestamp')
-        # Validating DataFrame object
-        validated_df_attr = df_attr_schema.validate(df_attr)
 
+        # Validating DataFrame object
+        if arg_val:
+            try:
+                schema_df_attr = schemas.schema_df_attr  # Load schema from schemas.py
+                validated_df_attr = schema_df_attr.validate(df_attr)
+                print("✅ DataFrame validated successfully.")
+            except Exception as e:
+                print(f"❌ Validation failed: {e}")
+                sys.exit(1)
+
+        df_attr = df_attr.drop(columns='dl_timestamp')
         # Constrain the values in the value column to two digits after the decimal point (to help ID duplicates)
         df_attr['value'] = df_attr['value'].apply(lambda x: round(x, 2))
 
@@ -289,7 +261,36 @@ if __name__ == "__main__":
                     "with mapie specified in the Uncertainty section of the algo config file.")
 
                 # Validating DataFrame object
-                validated_df_pred = df_pred_schema .validate(df_pred)
+                if arg_val:
+                    schema_df_pred_dict = {
+                        "featureID": Column(pa.Int, nullable=False),
+                        "prediction": Column(pa.Float, nullable=False),
+                        "metric": Column(pa.String, checks=Check.isin(["NSE", "RMSE", "KGE"]), nullable=False),
+                        "dataset": Column(pa.String, nullable=False),
+                        "algo": Column(pa.String, checks=Check.isin(["rf", "mlp"]), nullable=False),
+                        "name_algo": Column(pa.String, checks=Check.str_matches(r".+\.joblib$"), nullable=False),
+                        "forestci": Column(pa.Float, nullable=True)  # Optional if not always present
+                    }
+                    
+                    # Dynamically add mapie_lower and mapie_upper columns if mapie_alpha is not empty
+                    for alpha in mapie_alpha:
+                        # Convert to string with consistent format (e.g., 0.05 -> "0.05")
+                        alpha_str = f"{alpha:.2f}".rstrip("0").rstrip(".") if "." in f"{alpha:.2f}" else f"{alpha:.2f}"
+                        col_name1 = f"mapie_lower_{alpha_str}"
+                        col_name2 = f"mapie_upper_{alpha_str}"
+                        schema_df_pred_dict[col_name1] = Column(pa.Float, nullable=True)
+                        schema_df_pred_dict[col_name2] = Column(pa.Float, nullable=True)
+    
+                    schema_df_pred = schemas.build_schema_df_pred(schema_df_pred_dict)
+                    
+                    try:
+                        validated_df_pred = schema_df_pred.validate(pd.DataFrame(df_pred))
+                        print("✅ Prediction DataFrame validated successfully.")
+                    except Exception as e:
+                        print(f"❌ Prediction validation failed: {e}")
+                        sys.exit(1)
+
+# validated_df_pred = df_pred_schema .validate(df_pred)
                 path_pred_out = fsate.std_pred_path(dir_out,algo=algo,metric=metric,dataset_id=ds)
                 # Write prediction results
                 df_pred.to_parquet(path_pred_out)

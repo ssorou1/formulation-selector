@@ -2,6 +2,8 @@ import pandera as pa
 from pandera import Column, DataFrameSchema, Index, Check
 
     # %% Introducing DataFrameSchema for dataframe objects
+    # These could be validated further using fs_attr_menu.yaml and attr_source.type.yaml file
+    # Inside the R package, proc.attr.hydfab
 schema_df_attr = DataFrameSchema({
         "featureID": Column(pa.Object, nullable=False),  # accepts int or str
         "featureSource": Column(str,checks=pa.Check.isin(["COMID", "custom_hfuid"]),nullable=False),
@@ -51,3 +53,13 @@ schema_dat_resp = pa.DataFrameSchema({
     "gage_id": Column(int, nullable=False),
     "comid": Column(int, nullable=False),
 })
+
+
+def build_schema_df_pred(schema_df_pred_dict):
+    return pa.DataFrameSchema(
+        schema_df_pred_dict,
+        index=pa.Index(pa.Int),
+        coerce=True,
+        strict=True,
+        name="DFPred"
+    )

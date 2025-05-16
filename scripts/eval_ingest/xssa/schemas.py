@@ -8,19 +8,47 @@ import yaml
 from pathlib import Path
 
 # %% Get data_source values
-# Path to your YAML file
-yaml_path = Path(__file__).resolve().parents[3] / "pkg" / "proc.attr.hydfab" / "inst" / "extdata" / "attr_source_types.yml"
+# Path to YAML files
+attr_source_yml_path = Path(__file__).resolve().parents[3] / "pkg" / "proc.attr.hydfab" / "inst" / "extdata" / "attr_source_types.yml"
+attr_menu_path = Path(__file__).resolve().parents[3] / "pkg" / "proc.attr.hydfab" / "inst" / "extdata" / "fs_attr_menu.yaml"
 
-with open(yaml_path, "r") as f:
+# Extract attribute sources
+with open(attr_source_yml_path, "r") as f:
     raw_sources = yaml.safe_load(f)
 
-# Extract internal_dataset_name values
 data_source_values = [
     d.get("internal_dataset_name")
     for v in raw_sources.values()
     for d in v if isinstance(d, dict) and "internal_dataset_name" in d
 ]
 data_source_values = [v for v in data_source_values if v]  # Remove None
+
+
+# Eaxtract valid attributes
+with open(attr_menu_path, "r") as f:
+    attr_menu = yaml.safe_load(f)
+
+valid_attributes = []
+for group in attr_menu.values():
+    for item in group:
+        valid_attributes.extend(item.keys())
+
+
+# Extract metrics from xssa_prep_config.yaml
+prep_config_path = Path(__file__).resolve().parent / "xssa_prep_config.yaml"
+
+with open(prep_config_path, "r") as f:
+    prep_config = yaml.safe_load(f)
+
+col_schema = prep_config["col_schema"]
+
+# Extract the 'metric_mappings' value
+metric_mappings_str = None
+for item in col_schema:
+    if isinstance(item, dict) and "metric_mappings" in item:
+        metric_mappings_str = item["metric_mappings"]
+        break
+valid_metrics = metric_mappings_str.split("|")
 
     # %% Introducing DataFrameSchema for dataframe objects
     # These could be validated further using fs_attr_menu.yaml and attr_source.type.yaml file
@@ -31,7 +59,7 @@ schema_df_attr = DataFrameSchema({
         "data_source": Column(str,checks=pa.Check.isin(data_source_values),nullable=False),
         # "data_source": Column(str,checks=pa.Check.isin(["hydroatlas__v1", "usgs_nhdplus__v2"]),nullable=False),
         "dl_timestamp": Column(pa.DateTime,nullable=False),
-        "attribute": Column(str,checks=pa.Check.str_length(1, 30),nullable=False),
+        "attribute": Column(str, checks=pa.Check.isin(valid_attributes), nullable=False),
         "value": Column(float,nullable=False),
     },
     index=Index(int, name=None),coerce=True,strict=True,name="DFAttr"
@@ -51,7 +79,7 @@ schema_gdf_comid = DataFrameSchema({
 schema_rslt_eval_df = pa.DataFrameSchema({
         "algorithm": Column(pa.String,checks=Check.isin(["rf", "mlp"]),nullable=False),
         "type": Column(pa.String,checks=Check.isin(["random forest regressor", "multi-layer perceptron regressor"]),nullable=False),
-        "metric": Column(pa.String,checks=Check.isin(["NSE", "RMSE", "KGE"]),nullable=False),
+        "metric": Column(pa.String, checks=Check.isin(valid_metrics), nullable=False),
         "mse": Column(pa.Float,nullable=False),
         "r2": Column(pa.Float,nullable=False),
         "dataset": Column(pa.String,nullable=False),

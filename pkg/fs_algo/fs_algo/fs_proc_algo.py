@@ -44,8 +44,8 @@ if __name__ == "__main__":
         sys.modules["schemas"] = schemas
         spec.loader.exec_module(schemas)
     
-        print("Loaded schemas:")
-        print(dir(schemas))  
+        # print("Loaded schemas:")
+        # print(dir(schemas))  
 
     with open(path_algo_config, 'r') as file:
         algo_cfg = yaml.safe_load(file)
@@ -149,14 +149,19 @@ if __name__ == "__main__":
         # TODO allow secondary option where featureSource and featureIDs already provided, not COMID 
  
         # Extract data from dat_resp into a pandas DataFrame and Validate
-        tempDF_dat_resp = pd.DataFrame({
+        temp_fixed_columns = {
             "basin_name": dat_resp["basin_name"].values,
-            "RMSE": dat_resp["RMSE"].values,
-            "NSE": dat_resp["NSE"].values,
-            "KGE": dat_resp["KGE"].values,
             "gage_id": dat_resp["gage_id"].values.astype(int),
             "comid": dat_resp["comid"].values.astype(int),
-        })
+        }
+        
+        # Define metric columns dynamically
+        temp_metric_columns = {
+            metric: dat_resp[metric].values for metric in metrics
+        }
+        
+        # Merge both dictionaries and create the DataFrame
+        tempDF_dat_resp = pd.DataFrame({**temp_fixed_columns, **temp_metric_columns})
 
         if arg_val:
             try:

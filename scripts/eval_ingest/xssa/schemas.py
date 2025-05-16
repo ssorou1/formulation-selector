@@ -115,3 +115,16 @@ def build_schema_df_pred(schema_df_pred_dict):
         name="DFPred"
     )
 
+ #%% Schemas for fs_tfrm_attrs.py
+schema_df_comids = DataFrameSchema({
+        "featureID": Column(pa.Object, nullable=False),  # accepts int or str
+        "featureSource": Column(str,checks=pa.Check.isin(["COMID", "custom_hfuid"]),nullable=False),
+        "data_source": Column(str,checks=pa.Check.isin(data_source_values),nullable=False),
+        "dl_timestamp": Column(pa.DateTime,nullable=False),
+        "attribute": Column(str, checks=pa.Check.isin(valid_attributes), nullable=False),
+        "value": Column(float,nullable=False),
+        "gage_id": Column(int,nullable=False),
+    },
+    index=Index(int, name=None),coerce=True,strict=True,name="DFComids"
+)
+

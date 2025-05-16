@@ -95,14 +95,15 @@ schema_attrs_sel = DataFrameSchema({
     index=pa.Index(pa.Int),coerce=True,strict=True,name="AttrsSelDF"
 )
 
-schema_dat_resp = pa.DataFrameSchema({
+# Creating schema for dat_resp
+schema_columns_dat_resp = {
     "basin_name": Column(str, nullable=False),
-    "RMSE": Column(float, nullable=False),
-    "NSE": Column(float, nullable=False),
-    "KGE": Column(float, nullable=False),
     "gage_id": Column(int, nullable=False),
     "comid": Column(int, nullable=False),
-})
+}
+for metric in valid_metrics:
+    schema_columns_dat_resp[metric] = Column(float, nullable=False)
+schema_dat_resp = pa.DataFrameSchema(schema_columns_dat_resp)
 
 
 def build_schema_df_pred(schema_df_pred_dict):

@@ -116,7 +116,7 @@ def draw_graph(G, title="Function Dependency Graph", html_output="function_graph
     print(f"Interactive graph saved as: {html_output}")
 
 if __name__ == "__main__":
-    file_path = "fs_algo_train_eval.py"  # Change as needed
+    file_path = "../fs_algo_train_eval.py"  # Change as needed
     G = build_dependency_graph(file_path)
     draw_graph(G, title="Function Dependency Graph", html_output="fs_function_graph.html")
 

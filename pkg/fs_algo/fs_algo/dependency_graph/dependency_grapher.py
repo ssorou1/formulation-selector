@@ -43,20 +43,6 @@ def build_dependency_graph(file_path):
     G.add_edges_from(edges)
     return G
 
-# def draw_graph(G, title="Function Dependency Graph"):
-#     plt.figure(figsize=(16, 12))
-#     pos = nx.spring_layout(G, k=0.5)
-#     nx.draw(G, pos, with_labels=True, node_color="skyblue",
-#             node_size=2500, font_size=10, font_weight='bold', edge_color="gray")
-#     plt.title(title)
-#     plt.tight_layout()
-#     plt.show()
-
-# if __name__ == "__main__":
-#     file_path = "fs_algo_train_eval.py"  # <-- Update with the correct path if needed
-#     G = build_dependency_graph(file_path)
-#     draw_graph(G)
-
 def draw_graph(G, title="Function Dependency Graph", html_output="function_graph.html"):
     # Draw static graph (optional)
     plt.figure(figsize=(16, 12))

@@ -1,3 +1,32 @@
+"""
+Function Dependency Grapher
+===========================
+
+This script analyzes one or more Python files and builds a **function-level dependency graph** showing which
+functions call which others — within the same file or across files.
+
+Function definitions and calls are parsed using the `ast` module. The resulting graph is visualized both as:
+- A static PNG file using `matplotlib` + `networkx`
+- An interactive HTML file using `pyvis`
+
+Each function is labeled as `filename:function_name` to support disambiguation across multiple files.
+
+Usage
+-----
+
+Run this script from the command line:
+
+.. code-block:: bash
+
+    python dependency_grapher.py path/to/file1.py path/to/file2.py --html_output=output_graph.html
+
+If `--html_output` is not provided:
+- For a single input file: output defaults to `<filename>_dependency_graph.html`
+- For multiple files: output defaults to `multi_dependency_graph.html`
+
+The corresponding PNG will be saved alongside the HTML, with the same base name.
+
+"""
 
 import ast
 import argparse

@@ -4,6 +4,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from pathlib import Path
 from pyvis.network import Network
+import warnings
 
 class FunctionCallVisitor(ast.NodeVisitor):
     def __init__(self):
@@ -48,6 +49,12 @@ def draw_graph(G, title="Function Dependency Graph", html_output="function_graph
     html_path = Path(html_output)
     png_output = html_path.with_suffix('.png')
     
+    # Create output directory if it doesn't exist
+    output_dir = html_path.parent
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=True)
+        warnings.warn(f"Created output directory: {output_dir.resolve()}", UserWarning)
+
     plt.figure(figsize=(16, 12))
 
     try:
@@ -63,6 +70,7 @@ def draw_graph(G, title="Function Dependency Graph", html_output="function_graph
     plt.title(title)
     plt.tight_layout()
     plt.savefig(png_output)  # Optional static image
+    print(f"Static graph saved to: {png_output.resolve()}")
     plt.show()
 
     # Draw interactive graph using pyvis
@@ -102,7 +110,7 @@ def draw_graph(G, title="Function Dependency Graph", html_output="function_graph
     """)
     
     net.show(html_output, notebook=False)
-    print(f"Interactive graph saved as: {html_output}")
+    print(f"Interactive graph saved to: {html_path.resolve()}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate function dependency graph for a Python file.")

@@ -1,4 +1,5 @@
 import ast
+import argparse
 import networkx as nx
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -102,7 +103,18 @@ def draw_graph(G, title="Function Dependency Graph", html_output="function_graph
     print(f"Interactive graph saved as: {html_output}")
 
 if __name__ == "__main__":
-    file_path = "../fs_algo_train_eval.py"  # Change as needed
-    G = build_dependency_graph(file_path)
-    draw_graph(G, title="Function Dependency Graph", html_output="fs_function_graph.html")
+    parser = argparse.ArgumentParser(description="Generate function dependency graph for a Python file.")
+    parser.add_argument("file_path", type=str, help="Path to the Python file to analyze")
+    parser.add_argument("--html_output", type=str, help="Filename for the interactive HTML output")
 
+    args = parser.parse_args()
+    # args.file_path = f'~/git/formulation-selector/pkg/fs_algo/fs_algo/fs_algo_train_eval.py'    
+
+    file_path = Path(args.file_path)
+    if args.html_output:
+        html_output = args.html_output
+    else:
+        html_output = f"{file_path.stem}_dependency_graph.html"
+
+    G = build_dependency_graph(file_path)
+    draw_graph(G, title="Function Dependency Graph", html_output=html_output)

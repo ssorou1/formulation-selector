@@ -45,7 +45,9 @@ def build_dependency_graph(file_path):
     return G
 
 def draw_graph(G, title="Function Dependency Graph", html_output="function_graph.html"):
-    # Draw static graph (optional)
+    html_path = Path(html_output)
+    png_output = html_path.with_suffix('.png')
+    
     plt.figure(figsize=(16, 12))
 
     try:
@@ -60,7 +62,7 @@ def draw_graph(G, title="Function Dependency Graph", html_output="function_graph
 
     plt.title(title)
     plt.tight_layout()
-    plt.savefig("function_graph.png")  # Optional static image
+    plt.savefig(png_output)  # Optional static image
     plt.show()
 
     # Draw interactive graph using pyvis

@@ -17,6 +17,7 @@ from datetime import datetime
 import importlib.util
 import sys
 from fs_algo.file_schemas.pydantic_schemas import ModelMetadata
+from fs_algo.file_schemas import schemas
 
 # TODO create a function that's flexible/converts user formatted checks (a la fs_prep)
 
@@ -29,21 +30,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     path_pred_config = Path(args.path_pred_config) #Path(f'~/git/formulation-selector/scripts/eval_ingest/xssa/xssa_pred_config.yaml') 
-    config_dir = path_pred_config.parent
 
     # Conditionally load schemas
     if args.validate:
         arg_val = True
-        schema_file = config_dir / "schemas.py"
-    
-        if not schema_file.exists():
-            raise FileNotFoundError(f"No schema file found at expected location: {schema_file}")
-    
-        # Dynamically import schemas.py
-        spec = importlib.util.spec_from_file_location("schemas", str(schema_file))
-        schemas = importlib.util.module_from_spec(spec)
-        sys.modules["schemas"] = schemas
-        spec.loader.exec_module(schemas)
 
     with open(path_pred_config, 'r') as file:
         pred_cfg = yaml.safe_load(file)
@@ -109,13 +99,12 @@ if __name__ == "__main__":
         # Validating DataFrame object
         if arg_val:
             try:
-                schema_df_attr = schemas.schema_df_attr  # Load schema from schemas.py
-                validated_df_attr = schema_df_attr.validate(df_attr)
-                print("✅ DataFrame validated successfully.")
-            except Exception as e:
+                 schemas.schema_df_attr.validate(df_attr)
+                 print("✅ DataFrame validated successfully.")
+            except (pa.errors.SchemaError, pa.errors.SchemaErrors) as e:
                 print(f"❌ Validation failed: {e}")
-                sys.exit(1)
-
+                print(e.args)
+    
         df_attr = df_attr.drop(columns='dl_timestamp')
         # Constrain the values in the value column to two digits after the decimal point (to help ID duplicates)
         df_attr['value'] = df_attr['value'].apply(lambda x: round(x, 2))

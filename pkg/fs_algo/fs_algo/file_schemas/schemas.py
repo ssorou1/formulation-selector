@@ -8,8 +8,10 @@ from pathlib import Path
 
 # %% Get data_source values
 # Path to YAML files
-attr_source_yml_path = Path(__file__).resolve().parents[3] / "pkg" / "proc.attr.hydfab" / "inst" / "extdata" / "attr_source_types.yml"
-attr_menu_path = Path(__file__).resolve().parents[3] / "pkg" / "proc.attr.hydfab" / "inst" / "extdata" / "fs_attr_menu.yaml"
+root_dir = Path(__file__).resolve().parents[3]
+
+attr_source_yml_path = root_dir / "proc.attr.hydfab" / "inst" / "extdata" / "attr_source_types.yml"
+attr_menu_path = root_dir / "proc.attr.hydfab" / "inst" / "extdata" / "fs_attr_menu.yaml"
 
 # Extract attribute sources
 with open(attr_source_yml_path, "r") as f:
@@ -34,7 +36,8 @@ for group in attr_menu.values():
 
 
 # Extract metrics from xssa_prep_config.yaml
-prep_config_path = Path(__file__).resolve().parent / "xssa_prep_config.yaml"
+root_dir_prep = Path(__file__).resolve().parents[4]
+prep_config_path = root_dir_prep / "scripts" / "eval_ingest" / "xssa" / "xssa_prep_config.yaml"
 
 with open(prep_config_path, "r") as f:
     prep_config = yaml.safe_load(f)

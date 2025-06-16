@@ -7,6 +7,7 @@ import ast
 import numpy as np
 import importlib.util
 import sys
+from fs_algo.file_schemas import schemas
 
 """Workflow script to train algorithms on catchment attribute data for predicting
     formulation metrics and/or hydrologic signatures.
@@ -23,21 +24,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     path_algo_config = Path(args.path_algo_config) #Path(f'~/git/formulation-selector/scripts/eval_ingest/xssa/xssa_algo_config.yaml') 
-    config_dir = path_algo_config.parent
 
     # Conditionally load schemas
     if args.validate:
         arg_val = True
-        schema_file = config_dir / "schemas.py"
-    
-        if not schema_file.exists():
-            raise FileNotFoundError(f"No schema file found at expected location: {schema_file}")
-    
-        # Dynamically import schemas.py
-        spec = importlib.util.spec_from_file_location("schemas", str(schema_file))
-        schemas = importlib.util.module_from_spec(spec)
-        sys.modules["schemas"] = schemas
-        spec.loader.exec_module(schemas)
 
     with open(path_algo_config, 'r') as file:
         algo_cfg = yaml.safe_load(file)

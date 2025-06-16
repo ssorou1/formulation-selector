@@ -1,9 +1,8 @@
-import pandera as pa
+import pandera.pandas as pa
 from pandera import Column, DataFrameSchema, Index, Check
-from typing import Any, Dict, Optional, Tuple
-from pydantic import BaseModel, field_validator, model_validator
+#from typing import Any, Dict, Optional, Tuple
 import numpy as np
-import re
+#import re
 import yaml
 from pathlib import Path
 

@@ -5,11 +5,6 @@ from pathlib import Path
 import fs_algo.fs_algo_train_eval as fsate
 import ast
 import numpy as np
-import pandera as pa
-from pandera import Column, DataFrameSchema, Index, Check
-from pandera.typing import Series
-from datetime import datetime
-import re
 import importlib.util
 import sys
 
@@ -43,9 +38,6 @@ if __name__ == "__main__":
         schemas = importlib.util.module_from_spec(spec)
         sys.modules["schemas"] = schemas
         spec.loader.exec_module(schemas)
-    
-        # print("Loaded schemas:")
-        # print(dir(schemas))  
 
     with open(path_algo_config, 'r') as file:
         algo_cfg = yaml.safe_load(file)

@@ -10,13 +10,13 @@ import os
 import numpy as np
 import forestci as fci
 from sklearn.model_selection import train_test_split
-import pandera as pa
+import pandera.pandas as pa
 from pandera import Column, DataFrameSchema, Index, Check
 from pandera.typing import Series
 from datetime import datetime
 import importlib.util
 import sys
-from fs_algo.pydantic_schemas import ModelMetadata
+from fs_algo.file_schemas.pydantic_schemas import ModelMetadata
 
 # TODO create a function that's flexible/converts user formatted checks (a la fs_prep)
 
@@ -44,10 +44,6 @@ if __name__ == "__main__":
         schemas = importlib.util.module_from_spec(spec)
         sys.modules["schemas"] = schemas
         spec.loader.exec_module(schemas)
-    
-        print("Loaded schemas:")
-        print(dir(schemas))  
-
 
     with open(path_pred_config, 'r') as file:
         pred_cfg = yaml.safe_load(file)
